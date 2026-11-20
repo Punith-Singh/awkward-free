@@ -17,7 +17,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.*
 
-@Composable internal fun SettingsScreen(currentUpi: String, currentName: String, remindersEnabled: Boolean, backupStatus: String, back: () -> Unit, setReminders: (Boolean) -> Unit, exportBackup: () -> Unit, importBackup: () -> Unit, save: (String, String) -> Unit) {
+@Composable internal fun SettingsScreen(currentUpi: String, currentName: String, remindersEnabled: Boolean, backupStatus: String, accountEmail: String?, openAccount: () -> Unit, back: () -> Unit, setReminders: (Boolean) -> Unit, exportBackup: () -> Unit, importBackup: () -> Unit, save: (String, String) -> Unit) {
     var upi by remember { mutableStateOf(currentUpi) }; var name by remember { mutableStateOf(currentName) }; var error by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         BackHeader("Your settings", back)
@@ -32,6 +32,7 @@ import com.punith.awkwardfree.util.*
             Column(Modifier.weight(1f)) { Text("Due-date reminders", fontWeight = FontWeight.Bold, color = Ink); Text("Daily around 9 AM for tabs due tomorrow, today or overdue. Timing can vary.", fontSize = 12.sp, color = Muted) }
             Switch(checked = remindersEnabled, onCheckedChange = setReminders)
         }
+        OutlinedButton(onClick = openAccount, modifier = Modifier.fillMaxWidth()) { Text(if (accountEmail == null) "Sign in or create account" else "Account: $accountEmail") }
         Text("BACKUP & RESTORE", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Text("A backup contains names, phone numbers, dues and your UPI ID. Keep the file somewhere private. Only saved settings are included.", color = Muted, fontSize = 12.sp)
         OutlinedButton(onClick = exportBackup, modifier = Modifier.fillMaxWidth()) { Text("Export backup") }

@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.punith.awkwardfree.reminders.scheduleReminders
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
@@ -26,7 +27,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.screens.*
 import com.punith.awkwardfree.ui.theme.*
 
-@Composable internal fun AwkwardApp(store: Store) {
+@Composable internal fun AwkwardApp(store: Store, auth: FirebaseAuth?, accountEmail: String?) {
     var dues by remember { mutableStateOf(store.read()) }
     var upi by remember { mutableStateOf(store.upi) }
     var name by remember { mutableStateOf(store.displayName) }
@@ -62,7 +63,8 @@ import com.punith.awkwardfree.ui.theme.*
                 "add" -> AddScreen(if (editing) selected else null, { back() }) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; screen = "details" }
                 "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }) else EmptyFallback { screen = "home" }
                 "nudge" -> if (selected != null) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.copy(lastNudged = System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
-                "settings" -> SettingsScreen(upi, name, reminderEnabled, backupStatus, { back() }, { enabled ->
+                "account" -> AccountScreen(auth, accountEmail) { screen = "settings" }
+                "settings" -> SettingsScreen(upi, name, reminderEnabled, backupStatus, accountEmail, { screen = "account" }, { back() }, { enabled ->
                     if (enabled && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     else { reminderEnabled = enabled; store.remindersEnabled = enabled; scheduleReminders(context, enabled); backupStatus = if (enabled) "Daily reminders enabled." else "Reminders turned off." }
                 }, { exportLauncher.launch("awkward-free-backup.json") }, { importLauncher.launch(arrayOf("application/json", "text/plain")) }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }

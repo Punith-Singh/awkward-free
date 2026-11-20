@@ -41,3 +41,17 @@ The Kotlin source is organized under `app/src/main/java/com/punith/awkwardfree/`
 Enable due-date reminders in Settings. Android may delay the approximately 9 AM notification; it summarizes tabs due tomorrow, today or overdue without sending WhatsApp messages. Android 13+ requires notification permission.
 
 Settings can export a JSON backup or restore one after confirmation. Restore replaces the current dues, name and UPI ID; it does not change your reminder setting. Backup files include personal and financial details, so store them privately.
+
+## Firebase email sign-in (setup required)
+
+This branch adds optional email/password authentication. Firebase Authentication manages credentials; passwords are not saved by the app. Each signed-in account has separate device-only records. Guest records remain intact but are not migrated to an account automatically. **Cloud Firestore sync is not implemented**, so signing in alone does not move or sync dues between devices. Keep the existing export/restore backup for device transfers.
+
+To configure authentication:
+
+1. Create or select a Firebase project. Register an Android app with package name `com.punith.awkwardfree`.
+2. Enable **Email/Password** in Firebase Authentication → Sign-in method.
+3. Download the Firebase-generated `google-services.json` for that Android app and place it at `app/google-services.json` locally. The file is ignored by Git in this repository; do not commit service-account credentials.
+4. Rebuild the app. Without the file, the app remains usable in device-only mode and Settings shows that account setup is needed.
+5. Open Settings → Sign in or create account. After sign-in, the account's local data is separate from the guest data. The user's account can sign out through the same screen.
+
+Email/password sign-in and password reset require an internet connection and a real configured Firebase project. Configure email handling and Firebase security settings for your deployment. No production Firebase project or credentials are included.

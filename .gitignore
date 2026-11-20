@@ -3,3 +3,6 @@
 local.properties
 **/build/
 *.iml
+
+# Firebase Android project configuration (keep local)
+app/google-services.json

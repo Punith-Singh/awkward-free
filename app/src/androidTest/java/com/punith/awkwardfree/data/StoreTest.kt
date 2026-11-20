@@ -37,6 +37,18 @@ class StoreTest {
         assertEquals("Punith", store.displayName)
         assertEquals(0, store.read().single().remaining().compareTo(BigDecimal("200.00")))
     }
+    @Test fun accountsAndExistingDeviceDataAreIsolated() {
+        val guest = Due(name = "Guest", amount = "50.00", reason = "Lunch", date = "2026-11-24")
+        val alice = Due(name = "Alice", amount = "500.00", reason = "Dinner", date = "2026-11-24")
+        store.write(listOf(guest))
+        val first = Store(context, "account-a")
+        val second = Store(context, "account-b")
+        first.write(listOf(alice))
+        assertEquals(guest.id, store.read().single().id)
+        assertEquals(alice.id, first.read().single().id)
+        assertTrue(second.read().isEmpty())
+        context.getSharedPreferences("awkward_free_user_account-a", 0).edit().clear().commit()
+    }
     @Test fun invalidBackupDoesNotOverwriteCurrentRecords() {
         val due = Due(name = "Ananya", amount = "500.00", reason = "Dinner", date = "2026-11-24")
         store.write(listOf(due))
