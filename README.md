@@ -9,6 +9,9 @@ A native Android app for making informal payment reminders a little less awkward
 - Friendly, playful and direct messages that can be edited before opening WhatsApp.
 - Optional WhatsApp number and UPI ID; reminders contain a UPI payment URI and the ID as a fallback.
 - Manual settlement and reopen actions, delete confirmation, and the time WhatsApp was opened for a reminder.
+- Record partial payments; outstanding balances and UPI links use the remaining amount.
+- Optional daily on-device due-date reminders, sent only to you.
+- Versioned local JSON backup export and confirmed restore via the Android file picker.
 - On-device storage; existing entries from the original version are preserved.
 
 The app does not send messages automatically, confirm WhatsApp delivery, process payments, or verify a UPI transfer. Confirm payment before marking a tab settled. UPI link handling depends on the recipient's messaging and payment apps. Data is local to the device and is removed if app data is cleared or the app is uninstalled.
@@ -32,3 +35,9 @@ The Kotlin source is organized under `app/src/main/java/com/punith/awkwardfree/`
 - `util/` — formatting, reminder messages and UPI links.
 
 `MainActivity.kt` sets up the app theme and launches the Compose UI. This remains a lightweight Compose state-based architecture; it does not use ViewModels or Room yet.
+
+## Reminders and backups
+
+Enable due-date reminders in Settings. Android may delay the approximately 9 AM notification; it summarizes due and overdue tabs without sending WhatsApp messages. Android 13+ requires notification permission.
+
+Settings can export a JSON backup or restore one after confirmation. Restore replaces the current dues, name and UPI ID; it does not change your reminder setting. Backup files include personal and financial details, so store them privately.

@@ -1,6 +1,14 @@
 package com.punith.awkwardfree.navigation
 
 import androidx.activity.compose.BackHandler
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import com.punith.awkwardfree.reminders.scheduleReminders
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
@@ -26,6 +34,20 @@ import com.punith.awkwardfree.ui.theme.*
     var selectedId by remember { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf(false) }
     var returnToNudge by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    var reminderEnabled by remember { mutableStateOf(store.remindersEnabled) }
+    var backupStatus by remember { mutableStateOf("") }
+    var pendingBackup by remember { mutableStateOf<Backup?>(null) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        reminderEnabled = granted; store.remindersEnabled = granted; scheduleReminders(context, granted)
+        backupStatus = if (granted) "Daily reminders enabled." else "Notification permission was not granted."
+    }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) try { context.contentResolver.openOutputStream(uri)?.use { it.write(store.exportBackup().toByteArray(Charsets.UTF_8)) } ?: error("Cannot open file"); backupStatus = "Backup saved." } catch (_: Exception) { backupStatus = "Couldn't save backup. Please try again." }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) try { val data = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { reader -> val chars = CharArray(2_000_001); var size = 0; while (size < chars.size) { val n = reader.read(chars, size, chars.size - size); if (n < 0) break; size += n }; require(size <= 2_000_000); String(chars, 0, size) } ?: error("Cannot open file"); pendingBackup = store.parseBackup(data); backupStatus = "" } catch (_: Exception) { backupStatus = "This backup couldn't be read. Your current data is unchanged." }
+    }
     val selected = dues.firstOrNull { it.id == selectedId }
     fun update(items: List<Due>) { dues = items; store.write(items) }
     fun navigate(target: String) { editing = false; returnToNudge = false; screen = target }
@@ -38,12 +60,16 @@ import com.punith.awkwardfree.ui.theme.*
                 "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
                 "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
                 "add" -> AddScreen(if (editing) selected else null, { back() }) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; screen = "details" }
-                "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }) else EmptyFallback { screen = "home" }
+                "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }) else EmptyFallback { screen = "home" }
                 "nudge" -> if (selected != null) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.copy(lastNudged = System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
-                "settings" -> SettingsScreen(upi, name, { back() }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
+                "settings" -> SettingsScreen(upi, name, reminderEnabled, backupStatus, { back() }, { enabled ->
+                    if (enabled && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    else { reminderEnabled = enabled; store.remindersEnabled = enabled; scheduleReminders(context, enabled); backupStatus = if (enabled) "Daily reminders enabled." else "Reminders turned off." }
+                }, { exportLauncher.launch("awkward-free-backup.json") }, { importLauncher.launch(arrayOf("application/json", "text/plain")) }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
             }
         }
     }
+    pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = backup.dues; upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }
 }
 @Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit) {
     val active = when (screen) { "details", "nudge" -> "dues"; else -> screen }

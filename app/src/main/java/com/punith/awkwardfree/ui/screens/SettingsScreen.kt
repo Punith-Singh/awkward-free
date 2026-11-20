@@ -17,7 +17,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.*
 
-@Composable internal fun SettingsScreen(currentUpi: String, currentName: String, back: () -> Unit, save: (String, String) -> Unit) {
+@Composable internal fun SettingsScreen(currentUpi: String, currentName: String, remindersEnabled: Boolean, backupStatus: String, back: () -> Unit, setReminders: (Boolean) -> Unit, exportBackup: () -> Unit, importBackup: () -> Unit, save: (String, String) -> Unit) {
     var upi by remember { mutableStateOf(currentUpi) }; var name by remember { mutableStateOf(currentName) }; var error by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         BackHeader("Your settings", back)
@@ -28,6 +28,15 @@ import com.punith.awkwardfree.util.*
         Text("Double-check your UPI ID before sharing. Your data stays on this device.", color = Muted, fontSize = 12.sp)
         if (error.isNotEmpty()) Text(error, color = MaterialTheme.colorScheme.error)
         PrimaryButton("Save settings", { val value = upi.trim(); if (value.isNotEmpty() && !value.matches(Regex("[A-Za-z0-9._-]+@[A-Za-z0-9._-]+"))) error = "Enter a valid UPI ID, like name@bank." else save(value, name.trim()) })
+        Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) { Text("Due-date reminders", fontWeight = FontWeight.Bold, color = Ink); Text("Daily around 9 AM for due or overdue tabs. Timing can vary.", fontSize = 12.sp, color = Muted) }
+            Switch(checked = remindersEnabled, onCheckedChange = setReminders)
+        }
+        Text("BACKUP & RESTORE", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text("A backup contains names, phone numbers, dues and your UPI ID. Keep the file somewhere private. Only saved settings are included.", color = Muted, fontSize = 12.sp)
+        OutlinedButton(onClick = exportBackup, modifier = Modifier.fillMaxWidth()) { Text("Export backup") }
+        OutlinedButton(onClick = importBackup, modifier = Modifier.fillMaxWidth()) { Text("Restore backup") }
+        if (backupStatus.isNotBlank()) Text(backupStatus, color = Violet, fontSize = 13.sp)
         EmptyCard("Your data, your control", "Dues are stored only on this device. Confirm payments yourself before marking them settled.")
     }
 }

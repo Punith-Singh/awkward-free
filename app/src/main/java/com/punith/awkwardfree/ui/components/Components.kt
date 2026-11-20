@@ -49,7 +49,7 @@ import com.punith.awkwardfree.util.*
         Row(verticalAlignment = Alignment.CenterVertically) {
             Avatar(d.name); Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) { Text(d.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(d.reason, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            Column(horizontalAlignment = Alignment.End) { Text(money(d.amount), color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp); Text(if (d.settled) "Settled" else "Due ${dateLabel(d.date)}", color = Muted, fontSize = 11.sp) }
+            Column(horizontalAlignment = Alignment.End) { Text(money(d.remaining().toPlainString()), color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp); Text(if (d.settled) "Settled" else "Due ${dateLabel(d.date)}", color = Muted, fontSize = 11.sp) }
         }
         HorizontalDivider(color = Line)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(if (d.settled) "Marked settled" else nudgeLabel(d.lastNudged), color = Muted, fontSize = 11.sp, modifier = Modifier.weight(1f)); Pill(if (d.settled) "View details" else "Nudge ↗", Lavender, Violet, if (d.settled) onClick else onNudge) }

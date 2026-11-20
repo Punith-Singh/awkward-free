@@ -51,7 +51,7 @@ import java.time.LocalDate
         if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
         PrimaryButton(if (existing == null) "Save this tab" else "Save changes", {
             val n = amount.toBigDecimalOrNull()
-            error = when { name.isBlank() || reason.isBlank() -> "Add a name and reason."; n == null || n <= BigDecimal.ZERO || n.scale() > 2 || n > BigDecimal("10000000") -> "Enter a valid amount greater than zero with up to 2 decimal places."; phone.isNotBlank() && !phone.matches(Regex("[1-9][0-9]{7,14}")) -> "Enter the phone number with country code, using digits only."; else -> "" }
+            error = when { name.isBlank() || reason.isBlank() -> "Add a name and reason."; n == null || n <= BigDecimal.ZERO || n.scale() > 2 || n > BigDecimal("10000000") -> "Enter a valid amount greater than zero with up to 2 decimal places."; existing != null && n != null && n < (existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) -> "The total cannot be less than payments already recorded."; existing != null && n != null && n.compareTo(existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) == 0 && !existing.settled -> "The total must be greater than payments already recorded."; phone.isNotBlank() && !phone.matches(Regex("[1-9][0-9]{7,14}")) -> "Enter the phone number with country code, using digits only."; else -> "" }
             if (error.isEmpty()) save((existing ?: Due(name = "", amount = "", reason = "", date = date)).copy(name = name.trim(), amount = n!!.setScale(2).toPlainString(), reason = reason.trim(), date = date, phone = phone))
         })
     }

@@ -1,13 +1,18 @@
 package com.punith.awkwardfree.model
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import java.math.BigDecimal
 import java.util.UUID
 
 internal data class Due(
     val id: String = UUID.randomUUID().toString(), val name: String, val amount: String,
     val reason: String, val date: String, val phone: String = "", val settled: Boolean = false,
-    val lastNudged: Long = 0L
-)
+    val lastNudged: Long = 0L, val paidAmount: String = "0.00"
+) {
+    fun recordPayment(value: BigDecimal): Due {
+        require(!settled && value > BigDecimal.ZERO && value.scale() <= 2 && value <= remaining())
+        val paid = ((paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) + value).setScale(2)
+        return copy(paidAmount = paid.toPlainString(), settled = paid.compareTo(amount.toBigDecimal()) >= 0)
+    }
+    fun remaining(): BigDecimal = ((amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) -
+        (paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO)).max(BigDecimal.ZERO)
+}

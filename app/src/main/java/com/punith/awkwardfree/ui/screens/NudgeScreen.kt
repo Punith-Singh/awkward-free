@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -26,14 +27,14 @@ import com.punith.awkwardfree.util.*
 
 @Composable internal fun NudgeScreen(d: Due, upi: String, back: () -> Unit, settings: () -> Unit, onOpened: () -> Unit) {
     val context = LocalContext.current
-    var tone by remember(d.id, upi) { mutableStateOf("Friendly") }; var text by remember(d.id, upi) { mutableStateOf(message(d, upi, "Friendly")) }; var error by remember { mutableStateOf("") }; var confirmTone by remember { mutableStateOf<String?>(null) }
+    var tone by remember(d.id, upi) { mutableStateOf(if (d.lastNudged > 0) "Follow-up" else "Friendly") }; var text by remember(d.id, upi) { mutableStateOf(message(d, upi, if (d.lastNudged > 0) "Follow-up" else "Friendly")) }; var error by remember { mutableStateOf("") }; var confirmTone by remember { mutableStateOf<String?>(null) }
     fun chooseTone(option: String) { tone = option; text = message(d, upi, option) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         BackHeader("Almost there", back)
         Heading("Let’s keep it easy", "A little nudge.", "Choose your vibe and make it yours.")
-        Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(19.dp)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Avatar(d.name); Spacer(Modifier.width(12.dp)); Column { Text("${d.name} owes you", color = Muted, fontSize = 12.sp); Text("${money(d.amount)}  ·  ${d.reason}", color = Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp) } }
+        Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(19.dp)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Avatar(d.name); Spacer(Modifier.width(12.dp)); Column { Text("${d.name} owes you", color = Muted, fontSize = 12.sp); Text("${money(d.remaining().toPlainString())}  ·  ${d.reason}", color = Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp) } }
         Text("PICK A TONE", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { listOf("Friendly", "Playful", "Direct").forEach { option -> Pill(option, if (tone == option) Violet else Color.White, if (tone == option) Color.White else Ink) { if (text != message(d, upi, tone)) confirmTone = option else chooseTone(option) } } }
+        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { listOf("Friendly", "Playful", "Super casual", "Close friend", "Follow-up", "Polite follow-up", "Direct").forEach { option -> Pill(option, if (tone == option) Violet else Color.White, if (tone == option) Color.White else Ink) { if (text != message(d, upi, tone)) confirmTone = option else chooseTone(option) } } }
         Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("MESSAGE PREVIEW  ·  TAP TO EDIT", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             HorizontalDivider(color = Line)

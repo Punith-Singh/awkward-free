@@ -21,7 +21,7 @@ import com.punith.awkwardfree.util.*
 import java.math.BigDecimal
 
 @Composable internal fun BalanceCard(dues: List<Due>) {
-    val open = dues.filterNot { it.settled }; val total = open.fold(BigDecimal.ZERO) { acc, d -> acc + (d.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) }
+    val open = dues.filterNot { it.settled }; val total = open.fold(BigDecimal.ZERO) { acc, d -> acc + d.remaining() }
     Column(Modifier.fillMaxWidth().background(Deep, RoundedCornerShape(24.dp)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Pill("YOUR BALANCE", Color(0xFF4D427C), Color(0xFFE4DFFF)); Text("✦", color = Lime, fontSize = 21.sp) }
         Text("You’re owed", color = Color(0xFFC8C2E0), fontSize = 13.sp)
