@@ -29,14 +29,14 @@ class DueReminderWorker(context: Context, params: WorkerParameters) : Worker(con
         if (!store.remindersEnabled) return Result.success()
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return Result.success()
         val today = LocalDate.now()
-        val count = store.read().count { !it.settled && try { !LocalDate.parse(it.date).isAfter(today) } catch (_: Exception) { false } }
+        val count = store.read().count { !it.settled && try { !LocalDate.parse(it.date).isAfter(today.plusDays(1)) } catch (_: Exception) { false } }
         if (count == 0) return Result.success()
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel("due_reminders", "Due date reminders", NotificationManager.IMPORTANCE_DEFAULT))
         val intent = PendingIntent.getActivity(applicationContext, 0, Intent(applicationContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(applicationContext, "due_reminders")
             .setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("A little reminder")
-            .setContentText("You have $count ${if (count == 1) "tab" else "tabs"} due or overdue. Open the app to review.")
+            .setContentText("You have $count ${if (count == 1) "tab" else "tabs"} due soon or overdue. Open the app to review.")
             .setAutoCancel(true).setContentIntent(intent).build()
         try { NotificationManagerCompat.from(applicationContext).notify(1001, notification) } catch (_: SecurityException) { }
         return Result.success()

@@ -38,6 +38,6 @@ The Kotlin source is organized under `app/src/main/java/com/punith/awkwardfree/`
 
 ## Reminders and backups
 
-Enable due-date reminders in Settings. Android may delay the approximately 9 AM notification; it summarizes due and overdue tabs without sending WhatsApp messages. Android 13+ requires notification permission.
+Enable due-date reminders in Settings. Android may delay the approximately 9 AM notification; it summarizes tabs due tomorrow, today or overdue without sending WhatsApp messages. Android 13+ requires notification permission.
 
 Settings can export a JSON backup or restore one after confirmation. Restore replaces the current dues, name and UPI ID; it does not change your reminder setting. Backup files include personal and financial details, so store them privately.

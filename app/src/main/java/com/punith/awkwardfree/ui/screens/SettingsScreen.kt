@@ -29,7 +29,7 @@ import com.punith.awkwardfree.util.*
         if (error.isNotEmpty()) Text(error, color = MaterialTheme.colorScheme.error)
         PrimaryButton("Save settings", { val value = upi.trim(); if (value.isNotEmpty() && !value.matches(Regex("[A-Za-z0-9._-]+@[A-Za-z0-9._-]+"))) error = "Enter a valid UPI ID, like name@bank." else save(value, name.trim()) })
         Row(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) { Text("Due-date reminders", fontWeight = FontWeight.Bold, color = Ink); Text("Daily around 9 AM for due or overdue tabs. Timing can vary.", fontSize = 12.sp, color = Muted) }
+            Column(Modifier.weight(1f)) { Text("Due-date reminders", fontWeight = FontWeight.Bold, color = Ink); Text("Daily around 9 AM for tabs due tomorrow, today or overdue. Timing can vary.", fontSize = 12.sp, color = Muted) }
             Switch(checked = remindersEnabled, onCheckedChange = setReminders)
         }
         Text("BACKUP & RESTORE", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
