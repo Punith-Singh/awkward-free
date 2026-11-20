@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -28,6 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,6 +44,23 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
 
+private val Jakarta = FontFamily(
+    Font(R.font.jakarta_regular, FontWeight.Normal),
+    Font(R.font.jakarta_medium, FontWeight.Medium),
+    Font(R.font.jakarta_semibold, FontWeight.SemiBold),
+    Font(R.font.jakarta_bold, FontWeight.Bold),
+    Font(R.font.jakarta_extrabold, FontWeight.ExtraBold)
+)
+private fun appTypography(): Typography {
+    val t = Typography()
+    return t.copy(
+        displayLarge = t.displayLarge.copy(fontFamily = Jakarta), displayMedium = t.displayMedium.copy(fontFamily = Jakarta), displaySmall = t.displaySmall.copy(fontFamily = Jakarta),
+        headlineLarge = t.headlineLarge.copy(fontFamily = Jakarta), headlineMedium = t.headlineMedium.copy(fontFamily = Jakarta), headlineSmall = t.headlineSmall.copy(fontFamily = Jakarta),
+        titleLarge = t.titleLarge.copy(fontFamily = Jakarta), titleMedium = t.titleMedium.copy(fontFamily = Jakarta), titleSmall = t.titleSmall.copy(fontFamily = Jakarta),
+        bodyLarge = t.bodyLarge.copy(fontFamily = Jakarta), bodyMedium = t.bodyMedium.copy(fontFamily = Jakarta), bodySmall = t.bodySmall.copy(fontFamily = Jakarta),
+        labelLarge = t.labelLarge.copy(fontFamily = Jakarta), labelMedium = t.labelMedium.copy(fontFamily = Jakarta), labelSmall = t.labelSmall.copy(fontFamily = Jakarta)
+    )
+}
 private val Background = Color(0xFFF5F4FB)
 private val Ink = Color(0xFF18152E)
 private val Muted = Color(0xFF78768D)
@@ -83,7 +104,7 @@ class MainActivity : ComponentActivity() {
         window.navigationBarColor = android.graphics.Color.WHITE
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-        setContent { MaterialTheme(colorScheme = lightColorScheme(primary = Violet, onPrimary = Color.White, surface = Color.White, background = Background, onSurface = Ink)) { AwkwardApp(store) } }
+        setContent { MaterialTheme(colorScheme = lightColorScheme(primary = Violet, onPrimary = Color.White, surface = Color.White, background = Background, onSurface = Ink), typography = appTypography()) { AwkwardApp(store) } }
     }
 }
 private fun money(amount: String): String = "₹" + try { BigDecimal(amount).stripTrailingZeros().toPlainString() } catch (_: Exception) { amount }
@@ -196,7 +217,13 @@ private fun message(d: Due, upi: String, tone: String): String {
     }
 }
 @Composable private fun Input(value: String, change: (String) -> Unit, label: String, placeholder: String, keyboard: KeyboardType = KeyboardType.Text) {
-    OutlinedTextField(value = value, onValueChange = change, modifier = Modifier.fillMaxWidth(), label = { Text(label, fontSize = 12.sp) }, placeholder = { Text(placeholder, color = Muted) }, singleLine = true, shape = RoundedCornerShape(16.dp), keyboardOptions = KeyboardOptions(keyboardType = keyboard), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White, unfocusedContainerColor = Color.White, unfocusedBorderColor = Color.Transparent, focusedBorderColor = Violet))
+    Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(16.dp)).padding(horizontal = 16.dp, vertical = 13.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(label.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Muted)
+        BasicTextField(value = value, onValueChange = change, modifier = Modifier.fillMaxWidth(), singleLine = true,
+            textStyle = TextStyle(fontFamily = Jakarta, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboard),
+            decorationBox = { inner -> Box { if (value.isEmpty()) Text(placeholder, color = Muted, fontSize = 15.sp); inner() } })
+    }
 }
 @Composable private fun AddScreen(existing: Due?, back: () -> Unit, save: (Due) -> Unit) {
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }; var amount by remember(existing?.id) { mutableStateOf(existing?.amount ?: "") }; var reason by remember(existing?.id) { mutableStateOf(existing?.reason ?: "") }; var date by remember(existing?.id) { mutableStateOf(existing?.date ?: LocalDate.now().toString()) }; var phone by remember(existing?.id) { mutableStateOf(existing?.phone ?: "") }; var error by remember { mutableStateOf("") }
@@ -204,8 +231,14 @@ private fun message(d: Due, upi: String, tone: String): String {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         BackHeader(if (existing == null) "New tab" else "Edit tab", back)
         Heading("Keep it simple", if (existing == null) "Add a little tab." else "Edit your tab.", "Just the details you need to remember.")
-        Column(Modifier.fillMaxWidth().background(Deep, RoundedCornerShape(22.dp)).padding(18.dp)) { Text("HOW MUCH?", color = Color(0xFFD2C9FF), fontWeight = FontWeight.Bold, fontSize = 11.sp); Text(if (amount.isBlank()) "₹ 0" else money(amount), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold); Text("Every rupee deserves its way home.", color = Color(0xFFDCD5FF), fontSize = 12.sp) }
-        Input(amount, { amount = it }, "Amount (₹)", "500", KeyboardType.Decimal)
+        Column(Modifier.fillMaxWidth().background(Deep, RoundedCornerShape(22.dp)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("HOW MUCH?", color = Color(0xFFD2C9FF), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("₹ ", color = Color(0xFFB8A9FF), fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                BasicTextField(value = amount, onValueChange = { amount = it }, singleLine = true, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), textStyle = TextStyle(fontFamily = Jakarta, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = Color.White), decorationBox = { inner -> Box { if (amount.isEmpty()) Text("0", color = Color(0xFFB8A9FF), fontSize = 36.sp, fontWeight = FontWeight.ExtraBold); inner() } })
+            }
+            Text("Every rupee deserves its way home.", color = Color(0xFFDCD5FF), fontSize = 12.sp)
+        }
         Input(name, { name = it }, "Who owes you?", "Ananya")
         Input(reason, { reason = it }, "What was it for?", "Dinner at Toit")
         val parsed = try { LocalDate.parse(date) } catch (_: Exception) { LocalDate.now() }
@@ -255,7 +288,7 @@ private fun message(d: Due, upi: String, tone: String): String {
         Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("MESSAGE PREVIEW  ·  TAP TO EDIT", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             HorizontalDivider(color = Line)
-            OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp), shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Transparent, focusedBorderColor = Violet))
+            BasicTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp), textStyle = TextStyle(fontFamily = Jakarta, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, color = Ink))
             if (upi.isNotBlank()) Column(Modifier.fillMaxWidth().background(Color(0xFFF4F0FF), RoundedCornerShape(14.dp)).padding(12.dp)) { Text("PAYMENT LINK INCLUDED", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text(upi, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold) } else TextButton(onClick = settings) { Text("Add UPI ID for a payment link") }
         }
         Text("You’ll review and send it yourself in WhatsApp. Opening WhatsApp records the nudge time; it doesn't confirm delivery.", color = Muted, fontSize = 12.sp)
