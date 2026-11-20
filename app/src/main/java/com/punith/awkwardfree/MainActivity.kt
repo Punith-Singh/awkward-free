@@ -120,7 +120,7 @@ private fun message(d: Due, upi: String, tone: String): String {
         "Direct" -> "Hi ${d.name}, could you please send me ${money(d.amount)} for ${d.reason}? Thanks!"
         else -> "Hey ${d.name}! Just a gentle reminder about ${money(d.amount)} for ${d.reason}. Whenever you get a chance, could you send it over? Thanks!"
     }
-    return if (upi.isBlank()) "$intro\n\nLet me know if you need my payment details." else "$intro\n\nPay via UPI: ${upiLink(upi, d)}\nUPI ID: $upi"
+    return intro
 }
 
 @Composable private fun AwkwardApp(store: Store) {
@@ -294,11 +294,12 @@ private fun message(d: Due, upi: String, tone: String): String {
             BasicTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp), textStyle = TextStyle(fontFamily = Jakarta, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, color = Ink))
             if (upi.isNotBlank()) Column(Modifier.fillMaxWidth().background(Color(0xFFF4F0FF), RoundedCornerShape(14.dp)).padding(12.dp)) { Text("PAYMENT LINK INCLUDED", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text(upi, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold) } else TextButton(onClick = settings) { Text("Add UPI ID for a payment link") }
         }
-        Text("You’ll review and send it yourself in WhatsApp. Opening WhatsApp records the nudge time; it doesn't confirm delivery.", color = Muted, fontSize = 12.sp)
+        Text("You’ll review and send it yourself in WhatsApp.", color = Muted, fontSize = 12.sp)
         if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
         PrimaryButton("Continue to WhatsApp", {
             if (text.isBlank()) error = "Write a message first." else try {
-                val url = "https://wa.me/${d.phone}?text=${Uri.encode(text)}"
+                val shareText = if (upi.isBlank()) text else "$text\n\nPay via UPI: ${upiLink(upi, d)}\nUPI ID: $upi"
+                val url = "https://wa.me/${d.phone}?text=${Uri.encode(shareText)}"
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 onOpened()
             } catch (_: Exception) { error = "Couldn't open WhatsApp. Check that WhatsApp or a browser is installed." }
