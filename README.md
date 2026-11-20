@@ -17,4 +17,4 @@ The app does not send messages automatically, confirm WhatsApp delivery, process
 
 Open in Android Studio with Android SDK 35 and JDK 17. The repository currently has no Gradle wrapper: with Gradle 8.9 installed, run `gradle wrapper --gradle-version 8.9`, then sync and run the `app` configuration on Android 8.0 or newer. GitHub Actions also builds the debug app using Gradle 8.9.
 
-Plus Jakarta Sans, the typeface used in the Figma design, is bundled under the SIL Open Font License; see `app/src/main/res/font/OFL.txt`.
+Plus Jakarta Sans, the typeface used in the Figma design, is bundled under the SIL Open Font License; see `licenses/PlusJakartaSans-OFL.txt`.
