@@ -19,3 +19,21 @@ jobs:
         with:
           gradle-version: '8.9'
       - run: gradle :app:testDebugUnitTest :app:assembleDebug
+      - name: Verify configured Firebase build
+        run: |
+          python3 - <<'PY'
+          import json
+          config = {
+              'project_info': {'project_number': '123456789012', 'project_id': 'demo-awkward-free', 'storage_bucket': 'demo-awkward-free.appspot.com'},
+              'client': [{
+                  'client_info': {'mobilesdk_app_id': '1:123456789012:android:1234567890abcdef', 'android_client_info': {'package_name': 'com.punith.awkwardfree'}},
+                  'oauth_client': [{'client_type': 3, 'client_id': '123456789012-example.apps.googleusercontent.com'}],
+                  'api_key': [{'current_key': 'fake-api-key-for-build-only'}],
+              }], 'configuration_version': '1'
+          }
+          with open('app/google-services.json', 'w') as file:
+              json.dump(config, file)
+          PY
+          gradle :app:assembleDebug
+          test -n "$(find app/build/generated -name values.xml -exec grep -l 'default_web_client_id' {} + | head -1)"
+          rm app/google-services.json

@@ -1,7 +1,7 @@
 name: Android emulator screenshots
 on:
   push:
-    branches: [figma-ui-refinement, refactor/separate-screens, feature/reminders-payments-backup]
+    branches: [figma-ui-refinement, refactor/separate-screens, feature/reminders-payments-backup, feature/firebase-email-auth]
   workflow_dispatch:
 jobs:
   screenshots:

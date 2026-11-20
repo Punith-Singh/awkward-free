@@ -9,8 +9,8 @@ import java.time.LocalDate
 
 internal data class Backup(val dues: List<Due>, val upi: String, val displayName: String)
 
-internal class Store(context: Context) {
-    private val prefs = context.getSharedPreferences("awkward_free", 0)
+internal class Store(context: Context, userId: String? = null) {
+    private val prefs = context.getSharedPreferences(if (userId == null) "awkward_free" else "awkward_free_user_$userId", 0)
     var upi: String
         get() = prefs.getString("upi", "") ?: ""
         set(value) { prefs.edit().putString("upi", value).apply() }

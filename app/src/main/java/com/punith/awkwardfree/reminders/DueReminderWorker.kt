@@ -18,6 +18,8 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.punith.awkwardfree.MainActivity
 import com.punith.awkwardfree.data.Store
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.Duration
@@ -25,7 +27,8 @@ import java.util.concurrent.TimeUnit
 
 class DueReminderWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
     override fun doWork(): Result {
-        val store = Store(applicationContext)
+        val uid = if (FirebaseApp.getApps(applicationContext).isEmpty()) null else FirebaseAuth.getInstance().currentUser?.uid
+        val store = Store(applicationContext, uid)
         if (!store.remindersEnabled) return Result.success()
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return Result.success()
         val today = LocalDate.now()
