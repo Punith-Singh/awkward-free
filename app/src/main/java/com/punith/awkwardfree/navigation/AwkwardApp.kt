@@ -1,0 +1,54 @@
+package com.punith.awkwardfree.navigation
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.punith.awkwardfree.data.*
+import com.punith.awkwardfree.model.*
+import com.punith.awkwardfree.ui.components.*
+import com.punith.awkwardfree.ui.screens.*
+import com.punith.awkwardfree.ui.theme.*
+
+@Composable internal fun AwkwardApp(store: Store) {
+    var dues by remember { mutableStateOf(store.read()) }
+    var upi by remember { mutableStateOf(store.upi) }
+    var name by remember { mutableStateOf(store.displayName) }
+    var screen by remember { mutableStateOf("home") }
+    var selectedId by remember { mutableStateOf<String?>(null) }
+    var editing by remember { mutableStateOf(false) }
+    var returnToNudge by remember { mutableStateOf(false) }
+    val selected = dues.firstOrNull { it.id == selectedId }
+    fun update(items: List<Due>) { dues = items; store.write(items) }
+    fun navigate(target: String) { editing = false; returnToNudge = false; screen = target }
+    fun back() { screen = when (screen) { "details" -> if (selected?.settled == true) "settled" else "dues"; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else "home"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; editing = false; returnToNudge = false }
+    BackHandler(enabled = screen != "home") { back() }
+    Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            when (screen) {
+                "home" -> HomeScreen(dues, name, { navigate("dues") }, { navigate("settled") }, { navigate("add") }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
+                "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
+                "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
+                "add" -> AddScreen(if (editing) selected else null, { back() }) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; screen = "details" }
+                "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }) else EmptyFallback { screen = "home" }
+                "nudge" -> if (selected != null) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.copy(lastNudged = System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
+                "settings" -> SettingsScreen(upi, name, { back() }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
+            }
+        }
+    }
+}
+@Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit) {
+    val active = when (screen) { "details", "nudge" -> "dues"; else -> screen }
+    val options = listOf(Triple("home", "Home", Icons.Outlined.Home), Triple("dues", "All dues", Icons.Outlined.ListAlt), Triple("add", "Add a due", Icons.Outlined.AddBox), Triple("settled", "Settled", Icons.Outlined.CheckCircle), Triple("settings", "Settings", Icons.Outlined.AccountCircle))
+    Row(Modifier.fillMaxWidth().background(Color.White).navigationBarsPadding().height(70.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+        options.forEach { (key, label, icon) -> IconButton(onClick = { onSelect(key) }) { Icon(icon, contentDescription = label, tint = if (active == key) Violet else Color(0xFF9893AA), modifier = Modifier.size(25.dp)) } }
+    }
+}
