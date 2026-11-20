@@ -65,3 +65,36 @@ adb exec-out screencap -p > screenshots/settled.png
 adb shell input tap 349 805
 sleep 2
 adb exec-out screencap -p > screenshots/settings.png
+# Exercise partial payment and confirm that the displayed balance is updated.
+adb shell input tap 49 805
+sleep 2
+tap_text 'Ananya'
+sleep 2
+tap_text 'Record a payment'
+sleep 2
+adb shell uiautomator dump /sdcard/window.xml >/dev/null
+adb pull /sdcard/window.xml /tmp/awkward-window.xml >/dev/null
+coords=$(python3 - <<'PY'
+import re, xml.etree.ElementTree as E
+root=E.parse('/tmp/awkward-window.xml')
+for node in root.iter('node'):
+    if node.get('class') == 'android.widget.EditText':
+        a,b,c,d=map(int,re.findall(r'\d+',node.get('bounds')))
+        print((a+c)//2,(b+d)//2)
+        break
+else: raise SystemExit('Payment input not found')
+PY
+)
+adb shell input tap $coords
+adb shell input text 300
+adb shell input keyevent 4
+sleep 1
+tap_text 'Record'
+sleep 2
+adb shell uiautomator dump /sdcard/window.xml >/dev/null
+adb pull /sdcard/window.xml /tmp/awkward-window.xml >/dev/null
+python3 - <<'PY'
+import xml.etree.ElementTree as E
+values=[n.get('text') for n in E.parse('/tmp/awkward-window.xml').iter('node')]
+assert '₹200' in values, f'Remaining balance not shown: {values}'
+PY
