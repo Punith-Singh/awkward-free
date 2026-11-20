@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
 import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigDecimal
@@ -54,11 +55,11 @@ private val Jakarta = FontFamily(
 private fun appTypography(): Typography {
     val t = Typography()
     return t.copy(
-        displayLarge = t.displayLarge.copy(fontFamily = Jakarta), displayMedium = t.displayMedium.copy(fontFamily = Jakarta), displaySmall = t.displaySmall.copy(fontFamily = Jakarta),
-        headlineLarge = t.headlineLarge.copy(fontFamily = Jakarta), headlineMedium = t.headlineMedium.copy(fontFamily = Jakarta), headlineSmall = t.headlineSmall.copy(fontFamily = Jakarta),
-        titleLarge = t.titleLarge.copy(fontFamily = Jakarta), titleMedium = t.titleMedium.copy(fontFamily = Jakarta), titleSmall = t.titleSmall.copy(fontFamily = Jakarta),
-        bodyLarge = t.bodyLarge.copy(fontFamily = Jakarta), bodyMedium = t.bodyMedium.copy(fontFamily = Jakarta), bodySmall = t.bodySmall.copy(fontFamily = Jakarta),
-        labelLarge = t.labelLarge.copy(fontFamily = Jakarta), labelMedium = t.labelMedium.copy(fontFamily = Jakarta), labelSmall = t.labelSmall.copy(fontFamily = Jakarta)
+        displayLarge = t.displayLarge.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), displayMedium = t.displayMedium.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), displaySmall = t.displaySmall.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified),
+        headlineLarge = t.headlineLarge.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), headlineMedium = t.headlineMedium.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), headlineSmall = t.headlineSmall.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified),
+        titleLarge = t.titleLarge.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), titleMedium = t.titleMedium.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), titleSmall = t.titleSmall.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified),
+        bodyLarge = t.bodyLarge.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), bodyMedium = t.bodyMedium.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), bodySmall = t.bodySmall.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified),
+        labelLarge = t.labelLarge.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), labelMedium = t.labelMedium.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), labelSmall = t.labelSmall.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified)
     )
 }
 private val Background = Color(0xFFF5F4FB)
@@ -107,7 +108,9 @@ class MainActivity : ComponentActivity() {
         setContent { MaterialTheme(colorScheme = lightColorScheme(primary = Violet, onPrimary = Color.White, surface = Color.White, background = Background, onSurface = Ink), typography = appTypography()) { AwkwardApp(store) } }
     }
 }
-private fun money(amount: String): String = "₹" + try { BigDecimal(amount).stripTrailingZeros().toPlainString() } catch (_: Exception) { amount }
+private fun money(amount: String): String = "₹" + try {
+    java.text.NumberFormat.getNumberInstance(Locale("en", "IN")).apply { maximumFractionDigits = 2; minimumFractionDigits = 0 }.format(BigDecimal(amount))
+} catch (_: Exception) { amount }
 private fun dateLabel(date: String): String = try { LocalDate.parse(date).format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)) } catch (_: Exception) { date }
 private fun nudgeLabel(time: Long): String = if (time == 0L) "Not nudged yet" else "Opened " + java.text.SimpleDateFormat("d MMM, h:mm a", Locale.getDefault()).format(java.util.Date(time))
 private fun upiLink(upi: String, due: Due): String = Uri.Builder().scheme("upi").authority("pay").appendQueryParameter("pa", upi).appendQueryParameter("am", due.amount).appendQueryParameter("cu", "INR").appendQueryParameter("tn", due.reason).build().toString()

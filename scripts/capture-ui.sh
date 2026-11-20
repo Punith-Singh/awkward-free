@@ -29,10 +29,28 @@ adb shell am start -n com.punith.awkwardfree/.MainActivity
 sleep 8
 mkdir -p screenshots
 adb exec-out screencap -p > screenshots/home.png
-adb shell input tap 108 438
+tap_text() {
+    local text="$1"
+    adb shell uiautomator dump /sdcard/window.xml >/dev/null
+    adb pull /sdcard/window.xml /tmp/awkward-window.xml >/dev/null
+    local coords
+    coords=$(python3 - "$text" <<'PYCODE'
+import sys, re, xml.etree.ElementTree as E
+root=E.parse('/tmp/awkward-window.xml')
+for node in root.iter('node'):
+    if node.get('text') == sys.argv[1]:
+        a,b,c,d=map(int,re.findall(r'\d+',node.get('bounds')))
+        print((a+c)//2,(b+d)//2)
+        break
+else: sys.exit('Text not found: '+sys.argv[1])
+PYCODE
+    )
+    adb shell input tap $coords
+}
+tap_text 'Ananya'
 sleep 3
 adb exec-out screencap -p > screenshots/detail.png
-adb shell input tap 145 477
+tap_text 'Send a nudge'
 sleep 3
 adb exec-out screencap -p > screenshots/nudge.png
 adb shell input tap 195 805
