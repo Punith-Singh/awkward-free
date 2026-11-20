@@ -1,0 +1,46 @@
+package com.punith.awkwardfree.data
+
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import android.content.Context
+import com.punith.awkwardfree.model.Due
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.math.BigDecimal
+
+@RunWith(AndroidJUnit4::class)
+class StoreTest {
+    private lateinit var context: Context
+    private lateinit var store: Store
+    @Before fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        context.getSharedPreferences("awkward_free", 0).edit().clear().commit()
+        store = Store(context)
+    }
+    @After fun tearDown() { context.getSharedPreferences("awkward_free", 0).edit().clear().commit() }
+    @Test fun legacyEntriesLoadWithZeroPaid() {
+        val legacy = """[{"id":"1","name":"Ananya","amount":"500.00","reason":"Dinner","date":"2026-11-24","phone":"","settled":false,"lastNudged":0}]"""
+        context.getSharedPreferences("awkward_free", 0).edit().putString("dues", legacy).commit()
+        val due = store.read().single()
+        assertEquals(0, due.remaining().compareTo(BigDecimal("500.00")))
+    }
+    @Test fun backupRoundTripPreservesPartialPaymentsAndSettings() {
+        val due = Due(name = "Ananya", amount = "500.00", reason = "Dinner", date = "2026-11-24").recordPayment(BigDecimal("300.00"))
+        store.write(listOf(due)); store.upi = "punith@upi"; store.displayName = "Punith"
+        val backup = store.exportBackup()
+        store.write(emptyList()); store.upi = ""; store.displayName = ""
+        assertTrue(store.restore(store.parseBackup(backup)))
+        assertEquals("punith@upi", store.upi)
+        assertEquals("Punith", store.displayName)
+        assertEquals(0, store.read().single().remaining().compareTo(BigDecimal("200.00")))
+    }
+    @Test fun invalidBackupDoesNotOverwriteCurrentRecords() {
+        val due = Due(name = "Ananya", amount = "500.00", reason = "Dinner", date = "2026-11-24")
+        store.write(listOf(due))
+        try { store.parseBackup("""{"version":999,"dues":[],"upi":"","displayName":""}"""); fail("Invalid version should fail") } catch (_: IllegalArgumentException) { }
+        assertEquals(due.id, store.read().single().id)
+    }
+}
