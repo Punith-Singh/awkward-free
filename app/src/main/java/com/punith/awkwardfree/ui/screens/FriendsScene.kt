@@ -212,11 +212,11 @@ private class CafeScene {
             shape(skin,"M39,172 Q43,169 47,174 L54,180 Q59,179 62,182 L65,185 Q66,188 60,188 L44,186 Q38,183 36,177 Z")
             shape(shirt,"M-61,192 Q-59,144 -42,131 Q-31,124 -13,120 L10,120 Q34,123 40,143 L47,192 Z")
             shape(seam,"M-59,192 Q-53,160 -45,151 L-41,176 L-24,183 L-22,192 Z")
-            shape("#F8EBD9","M-19,124 L10,122 L21,134 L9,183 Z")
+            shape("#F8EBD9","M-18,122 Q-5,129 10,122 L20,133 Q14,157 9,185 L-10,185 Q-12,150 -18,122 Z")
             shape(skin,"M-15,92 L8,96 L10,122 Q6,133 -2,133 L-17,124 Z")
             shape(shadow,"M-15,103 L7,102 L8,113 Q-1,118 -15,113 Z")
-            shape(seam,"M-17,119 L4,148 L-19,136 L-25,139 L-30,129 Z")
-            shape(shirt,"M-17,118 L1,143 L-17,132 L-24,134 L-28,128 Z")
+            shape(seam,"M-17,119 Q-10,132 3,146 L-17,135 Q-22,137 -25,139 L-30,129 Z")
+            shape(shirt,"M-17,118 Q-12,128 1,143 L-17,132 L-24,134 L-28,128 Z")
             shape(seam,"M11,119 L22,126 L14,139 L7,145 Z")
             if (woman) {
                 shape("#B19AC9","M-41,134 Q-34,126 -26,125 L-30,131 L-37,139 Z")
@@ -229,68 +229,54 @@ private class CafeScene {
                 oval("#EAD8B4",7f,150f,1.3f,1.3f)
             }
             withSave {
-                rotate(headTilt,0f,112f)
+                rotate(headTilt, 0f, 112f)
+                val hair = if (woman) "#40303A" else "#302B31"
+                val hairLight = if (woman) "#62454D" else "#504047"
+                val faceLight = if (woman) "#E9AD8B" else "#C98763"
+                // Broad, simple silhouettes make the friends read clearly at phone size.
                 if (woman) {
-                    // A loose wavy bob frames her face, with a small bun at the back.
-                    shape("#372B37", "M-34,79 C-43,69 -42,51 -35,41 C-28,30 -15,27 -2,30 C13,28 27,37 29,51 C33,61 30,74 27,82 C31,92 30,108 23,114 C14,120 -18,120 -30,113 C-40,107 -42,96 -34,79 Z")
-                    shape("#372B37", "M-29,50 C-44,53 -51,47 -50,37 C-49,28 -41,23 -32,26 C-24,27 -21,34 -23,42 Z")
-                    shape("#6E4D51", "M-46,37 C-45,29 -39,27 -34,28 Q-42,31 -43,38 Z")
-                    shape("#D9A85D", "M-30,34 Q-25,31 -22,35 L-22,38 Q-26,35 -30,38 Z")
+                    shape(hair, "M-30,80 C-38,68 -36,51 -29,42 C-22,32 -12,29 0,30 C16,29 28,39 30,54 C33,65 30,76 29,87 C34,98 30,111 19,115 C8,118 -15,118 -26,113 C-36,108 -38,94 -30,80 Z")
+                    oval(hair,-32f,37f,13f,13f)
+                    shape(hairLight, "M-42,35 Q-39,27 -30,27 Q-36,30 -38,36 Z")
+                    shape("#E3B96F", "M-31,36 Q-27,33 -23,35 L-22,38 Q-27,37 -30,40 Z")
                 } else {
-                    // A textured crop and a soft sideburn give him his own silhouette.
-                    shape("#30272C", "M-33,75 C-39,61 -36,46 -28,37 C-20,28 -5,29 6,31 C20,28 30,38 31,50 C35,59 32,70 27,79 L25,99 Q20,108 13,110 L-24,105 Z")
-                    oval("#30272C",-28f,43f,9f,9f)
-                    oval("#30272C",-18f,36f,10f,9f)
-                    oval("#30272C",-6f,35f,10f,9f)
-                    oval("#30272C",6f,35f,10f,9f)
-                    oval("#30272C",17f,39f,10f,9f)
-                    shape("#5D4547","M-30,42 Q-24,31 -13,33 Q-23,36 -27,44 Z")
-                    shape("#62494A","M-11,34 Q-1,29 8,34 Q-2,33 -9,38 Z")
+                    shape(hair, "M-30,76 C-36,65 -34,48 -26,39 C-19,31 -8,29 2,31 C12,28 24,34 28,44 C34,51 33,64 29,75 L25,99 Q18,110 2,111 L-22,102 Z")
+                    shape(hairLight, "M-25,43 Q-17,33 -3,34 Q-14,35 -22,45 Z")
+                    shape(hairLight, "M3,33 Q15,31 23,41 Q13,36 4,37 Z")
                 }
-                // Rounded three-quarter head with the nearer cheek and ear visible.
-                oval(skin,-25f,79f,7f,9f)
-                shape(skin, "M-25,62 C-24,49 -14,42 -2,42 C12,42 23,51 24,65 L24,86 C24,102 15,112 3,113 C-10,113 -20,105 -23,93 Q-26,82 -25,62 Z")
-                shape(shadow, "M-27,74 Q-32,75 -31,81 Q-30,86 -26,87 Q-28,83 -27,80 Q-25,78 -23,82 Q-23,76 -27,74 Z")
+                // Ears and a rounded face sit inside the hair, with a soft edge shadow.
+                oval(shadow,-25f,78f,7f,10f)
+                oval(skin,-26f,77f,5f,7f)
+                oval(shadow,24f,78f,6f,9f)
+                shape(skin, "M-24,59 C-23,46 -14,40 0,40 C15,40 24,48 24,61 L24,83 C24,100 15,110 2,111 C-11,111 -21,102 -23,89 Q-25,76 -24,59 Z")
+                shape(faceLight, "M-20,60 C-19,48 -10,44 0,44 C9,44 17,49 20,57 C13,53 7,53 -1,55 C-8,57 -14,60 -20,60 Z")
                 if (woman) {
-                    shape("#372B37","M-29,70 C-34,57 -30,43 -21,37 C-11,30 5,32 15,38 Q25,45 25,58 Q18,58 11,52 Q3,61 -8,63 Q-15,65 -21,64 L-23,77 Z")
-                    shape("#674A50","M-26,53 Q-17,36 -3,37 Q-16,41 -24,56 Z")
-                    shape("#76535A","M-13,37 Q0,32 12,40 Q2,37 -8,42 Z")
-                    shape("#372B37","M-23,62 Q-17,70 -19,81 Q-20,88 -24,93 Q-22,80 -27,74 Z")
-                    oval("#E4B86F",-26f,91f,3f,4f)
-                    oval("#A16B58",-26f,91f,1.7f,2.7f)
+                    shape(hair, "M-27,68 C-31,52 -25,39 -14,35 C-3,30 11,33 19,40 Q25,47 25,57 C17,57 10,53 7,49 C1,58 -11,62 -21,61 L-22,76 Z")
+                    shape(hairLight, "M-22,49 Q-14,36 -2,36 Q-13,40 -19,52 Z")
+                    shape(hair, "M-23,60 Q-17,65 -19,77 Q-20,85 -24,90 L-26,75 Z")
+                    oval("#EFC777",-26f,89f,2.5f,3f)
+                    oval("#BB8960",-26f,89f,1.2f,1.6f)
                 } else {
-                    shape("#30272C","M-28,71 Q-32,56 -25,44 Q-18,35 -4,37 Q9,33 20,42 Q26,47 25,58 Q18,58 12,53 Q4,59 -5,57 Q-13,64 -21,64 L-22,77 Z")
-                    shape("#30272C","M-24,65 Q-20,69 -21,79 L-23,86 Q-25,82 -25,77 Z")
-                    shape("#9E674F","M-19,100 Q-12,109 1,111 Q13,112 21,102 Q17,113 4,115 Q-12,113 -19,103 Z")
+                    shape(hair, "M-27,67 C-30,54 -25,41 -14,37 C-6,33 1,34 7,35 C17,33 25,40 26,52 L25,59 Q17,58 12,53 Q5,59 -3,57 Q-12,62 -21,61 L-22,75 Z")
+                    shape(hair, "M-24,61 Q-19,66 -20,76 L-23,85 Q-24,79 -26,75 Z")
                 }
-                // Soft, expressive features remain attached to the head as it turns.
-                val eyeOpen = 1f - blink
-                val eyeShift = .7f - .5f * gaze
-                val brow = if (woman) "#5A3940" else "#493139"
-                shape(brow, "M-16,70 Q-11,66.8 -5.5,69 Q-10.5,68.3 -15.5,71 Z")
-                shape(brow, "M5.5,69 Q11,66.8 16,70 L15.5,71 Q10.5,68.3 5.5,70 Z")
-                // Almond-shaped eyes, warm irises and tiny highlights avoid a startled look.
-                shape(if (woman) "#F9E5D7" else "#EAD1BD", "M-15.2,76 Q-10.8,72.3 -6,75.8 Q-10.5,79.3 -15.2,76 Z")
-                shape(if (woman) "#F9E5D7" else "#EAD1BD", "M6,75.8 Q10.8,72.3 15.2,76 Q10.5,79.3 6,75.8 Z")
-                oval("#543A35",-10.5f+eyeShift,76f,1.75f,1.8f*eyeOpen+.12f)
-                oval("#543A35",10.5f+eyeShift,76f,1.75f,1.8f*eyeOpen+.12f)
-                if (eyeOpen > .5f) {
-                    oval("#FFF8EC",-10.9f+eyeShift,75.4f,.52f,.52f)
-                    oval("#FFF8EC",10.1f+eyeShift,75.4f,.52f,.52f)
-                } else {
-                    line(brow,-15f,76f,-6f,76f,1.15f)
-                    line(brow,6f,76f,15f,76f,1.15f)
+                val feature = if (woman) "#543B40" else "#49343A"
+                val pupilShift = .5f - .4f * gaze
+                // Brows and compact dark eyes keep the expression relaxed and legible.
+                shape(feature, "M-15,70 Q-11,67 -6,69 L-6,70 Q-11,69 -15,71 Z")
+                shape(feature, "M5,69 Q10,67 15,70 L15,71 Q10,69 5,70 Z")
+                val eyeHeight = (1f - blink).coerceAtLeast(.08f)
+                oval(feature,-10f+pupilShift,76f,1.7f,2.25f*eyeHeight)
+                oval(feature,10f+pupilShift,76f,1.7f,2.25f*eyeHeight)
+                if (eyeHeight > .55f) {
+                    oval("#FFF4E9",-10.4f+pupilShift,75.2f,.45f,.55f)
+                    oval("#FFF4E9",9.6f+pupilShift,75.2f,.45f,.55f)
                 }
-                // Gentle cheek colour, a small nose and an asymmetrical smile.
-                oval(if (woman) "#D89080" else "#A86550",-15f,87f,4.4f,2.2f)
-                oval(if (woman) "#D89080" else "#A86550",15f,87f,4.4f,2.2f)
-                shape(if (woman) "#BF8069" else "#915942",
-                    "M1,82 Q-1,87 1.5,89 Q3.5,90 6,88.5 Q3,89 2.5,87 Q2.2,85 3,82 Z")
-                shape(if (woman) "#965B58" else "#74473F",
-                    "M-4,96 Q2,100.5 10,96 Q7,101.8 2.2,101 Q-1.5,100.5 -4,96 Z")
-                line(if (woman) "#B8776D" else "#985E4E",-1f,103f,5f,103.5f,.65f)
-                if (speaking > .1f) oval("#784A49",3.5f,99f,2.7f,1.2f*speaking)
-
+                oval(if (woman) "#D88E7C" else "#B6755C",-15f,86f,4f,1.8f)
+                oval(if (woman) "#D88E7C" else "#B6755C",15f,86f,4f,1.8f)
+                shape(shadow, "M1,81 Q-1,86 1.5,88 Q3.5,89 5.5,87.8 Q3,88 2.5,86.5 Q2,84 3,81 Z")
+                shape(if (woman) "#925B56" else "#71443E", "M-4,95 Q3,99 10,95 Q7,100 3,100 Q-1,100 -4,95 Z")
+                if (speaking > .1f) oval("#74443F",3f,98f,2.5f,1.4f*speaking)
             }
         }
         // A two-bone arm bends at the elbow as the wrist moves between targets.
@@ -384,3 +370,4 @@ private class CafeScene {
         }
     }
 }
+
