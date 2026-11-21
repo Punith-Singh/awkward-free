@@ -43,9 +43,9 @@ private data class IntroPage(val eyebrow: String, val title: String, val descrip
     BoxWithConstraints(Modifier.fillMaxSize().background(Background).safeDrawingPadding()) {
         val screenHeight = maxHeight
         val contentWidth = maxWidth.coerceAtMost(544.dp)
-        val sceneHeight = (contentWidth - 44.dp) * .66f
+        val sceneHeight = ((contentWidth - 44.dp) * .66f).coerceAtMost(screenHeight * .36f)
         Column(
-            Modifier.align(Alignment.TopCenter).width(contentWidth).verticalScroll(rememberScrollState()).heightIn(min = screenHeight)
+            Modifier.align(Alignment.TopCenter).width(contentWidth).fillMaxHeight()
                 .padding(horizontal = 22.dp, vertical = 12.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -54,7 +54,8 @@ private data class IntroPage(val eyebrow: String, val title: String, val descrip
                 TextButton(onClick = onFinish) { Text("Skip", color = Muted) }
             }
             Spacer(Modifier.height(18.dp))
-            Box(Modifier.fillMaxWidth()) {
+            Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+              Box(Modifier.fillMaxWidth()) {
                 FriendsScene(
                     position = { pager.currentPage + pager.currentPageOffsetFraction },
                     settledPage = pager.settledPage,
@@ -79,10 +80,9 @@ private data class IntroPage(val eyebrow: String, val title: String, val descrip
                         }
                     }
                 }
-
+              }
             }
-            Spacer(Modifier.weight(1f))
-            Spacer(Modifier.height(26.dp))
+            Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically) {
