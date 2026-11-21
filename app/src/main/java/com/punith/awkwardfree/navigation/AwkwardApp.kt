@@ -1,6 +1,9 @@
 package com.punith.awkwardfree.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -11,7 +14,9 @@ import androidx.core.content.ContextCompat
 import com.punith.awkwardfree.reminders.scheduleReminders
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -20,6 +25,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.punith.awkwardfree.data.*
 import com.punith.awkwardfree.model.*
@@ -76,7 +86,25 @@ import com.punith.awkwardfree.ui.theme.*
 @Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit) {
     val active = when (screen) { "details", "nudge" -> "dues"; else -> screen }
     val options = listOf(Triple("home", "Home", Icons.Outlined.Home), Triple("dues", "All dues", Icons.Outlined.ListAlt), Triple("add", "Add a due", Icons.Outlined.AddBox), Triple("settled", "Settled", Icons.Outlined.CheckCircle), Triple("settings", "Settings", Icons.Outlined.AccountCircle))
-    Row(Modifier.fillMaxWidth().background(Color.White).navigationBarsPadding().height(70.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-        options.forEach { (key, label, icon) -> IconButton(onClick = { onSelect(key) }) { Icon(icon, contentDescription = label, tint = if (active == key) Violet else Color(0xFF9893AA), modifier = Modifier.size(25.dp)) } }
+    val shape = RoundedCornerShape(28.dp)
+    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 12.dp, top = 6.dp), contentAlignment = Alignment.Center) {
+        Row(
+            Modifier.fillMaxWidth().shadow(12.dp, shape, ambientColor = Violet.copy(alpha = 0.18f), spotColor = Violet.copy(alpha = 0.18f))
+                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.94f), Color(0xFFECE7FF).copy(alpha = 0.88f))), shape)
+                .border(1.dp, Color.White.copy(alpha = 0.9f), shape).height(68.dp).padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically
+        ) {
+            options.forEach { (key, label, icon) ->
+                val selected = active == key
+                val indicatorColor by animateColorAsState(if (selected) Violet.copy(alpha = 0.13f) else Color.Transparent, label = "navigation selection")
+                val iconColor by animateColorAsState(if (selected) Violet else Color(0xFF79748F), label = "navigation icon")
+                val iconScale by animateFloatAsState(if (selected) 1.08f else 1f, animationSpec = spring(), label = "navigation icon scale")
+                IconButton(onClick = { onSelect(key) }, modifier = Modifier.semantics { this.selected = selected }) {
+                    Box(Modifier.size(44.dp).background(indicatorColor, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
+                        Icon(icon, contentDescription = label, tint = iconColor, modifier = Modifier.size(24.dp).scale(iconScale))
+                    }
+                }
+            }
+        }
     }
 }

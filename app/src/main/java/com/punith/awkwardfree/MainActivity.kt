@@ -14,6 +14,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.punith.awkwardfree.navigation.*
 import com.punith.awkwardfree.ui.theme.*
+import com.punith.awkwardfree.ui.screens.OnboardingScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,7 +33,16 @@ class MainActivity : ComponentActivity() {
             }
             val uid = user?.uid
             val store = remember(uid) { Store(this, uid) }
-            key(uid) { AwkwardApp(store, auth, user?.email) }
+            val onboardingPrefs = remember { getSharedPreferences("awkward_free_onboarding", MODE_PRIVATE) }
+            var onboardingComplete by remember { mutableStateOf(onboardingPrefs.getBoolean("complete", false)) }
+            if (onboardingComplete) {
+                key(uid) { AwkwardApp(store, auth, user?.email) }
+            } else {
+                OnboardingScreen {
+                    onboardingPrefs.edit().putBoolean("complete", true).apply()
+                    onboardingComplete = true
+                }
+            }
         } }
     }
 }
