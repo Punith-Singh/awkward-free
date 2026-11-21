@@ -245,6 +245,7 @@ private class CafeScene {
                     oval("#30272C",6f,35f,10f,9f)
                     oval("#30272C",17f,39f,10f,9f)
                     shape("#5D4547","M-30,42 Q-24,31 -13,33 Q-23,36 -27,44 Z")
+                    shape("#62494A","M-11,34 Q-1,29 8,34 Q-2,33 -9,38 Z")
                 }
                 // Rounded three-quarter head with the nearer cheek and ear visible.
                 oval(skin,-25f,79f,7f,9f)
@@ -253,6 +254,7 @@ private class CafeScene {
                 if (woman) {
                     shape("#372B37","M-29,70 C-34,57 -30,43 -21,37 C-11,30 5,32 15,38 Q25,45 25,58 Q18,58 11,52 Q3,61 -8,63 Q-15,65 -21,64 L-23,77 Z")
                     shape("#674A50","M-26,53 Q-17,36 -3,37 Q-16,41 -24,56 Z")
+                    shape("#76535A","M-13,37 Q0,32 12,40 Q2,37 -8,42 Z")
                     shape("#372B37","M-23,62 Q-17,70 -19,81 Q-20,88 -24,93 Q-22,80 -27,74 Z")
                     oval("#E4B86F",-26f,91f,3f,4f)
                     oval("#A16B58",-26f,91f,1.7f,2.7f)
@@ -261,22 +263,33 @@ private class CafeScene {
                     shape("#30272C","M-24,65 Q-20,69 -21,79 L-23,86 Q-25,82 -25,77 Z")
                     shape("#9E674F","M-19,100 Q-12,109 1,111 Q13,112 21,102 Q17,113 4,115 Q-12,113 -19,103 Z")
                 }
-                // Features share the same eye line and move together as the gaze shifts.
-                shape("#58404A","M-15.5,69.5 Q-10.5,67 -5.5,69.5 L-5.5,70.6 Q-10.5,68.8 -15.5,70.6 Z")
-                shape("#58404A","M5.5,69.5 Q10.5,67 15.5,69.5 L15.5,70.6 Q10.5,68.8 5.5,70.6 Z")
+                // Soft, expressive features remain attached to the head as it turns.
                 val eyeOpen = 1f - blink
-                val eyeShift = .9f - .6f * gaze
-                oval("#FFF4E7",-10.5f,76.5f,4.1f,2.4f*eyeOpen+.25f)
-                oval("#FFF4E7",10.5f,76.5f,4.1f,2.4f*eyeOpen+.25f)
-                oval("#443138",-10.5f+eyeShift,76.5f+.45f*gaze,1.65f,2.1f*eyeOpen+.22f)
-                oval("#443138",10.5f+eyeShift,76.5f+.45f*gaze,1.65f,2.1f*eyeOpen+.22f)
-                // Short curved marks keep the nose and relaxed smile subtle.
-                shape(if (woman) "#BB8068" else "#8E583F",
-                    "M.5,84 Q-.5,88 2,89 Q4,90 6,88.8 Q3,89 2.3,87.5 Q1.5,86 2,84 Z")
-                oval(if (woman) "#D99882" else "#A97159",-13f,88f,4.2f,1.8f)
-                shape(if (woman) "#8F5754" else "#704342",
-                    "M-2,97 Q4,100.5 11.5,96.6 Q7,102.5 2,100.7 Q-.5,100 -2,97 Z")
-                if (speaking > .1f) oval("#784A49",4.5f,99f,2.7f,1.2f*speaking)
+                val eyeShift = .7f - .5f * gaze
+                val brow = if (woman) "#5A3940" else "#493139"
+                shape(brow, "M-16,70 Q-11,66.8 -5.5,69 Q-10.5,68.3 -15.5,71 Z")
+                shape(brow, "M5.5,69 Q11,66.8 16,70 L15.5,71 Q10.5,68.3 5.5,70 Z")
+                // Almond-shaped eyes, warm irises and tiny highlights avoid a startled look.
+                shape(if (woman) "#F9E5D7" else "#EAD1BD", "M-15.2,76 Q-10.8,72.3 -6,75.8 Q-10.5,79.3 -15.2,76 Z")
+                shape(if (woman) "#F9E5D7" else "#EAD1BD", "M6,75.8 Q10.8,72.3 15.2,76 Q10.5,79.3 6,75.8 Z")
+                oval("#543A35",-10.5f+eyeShift,76f,1.75f,1.8f*eyeOpen+.12f)
+                oval("#543A35",10.5f+eyeShift,76f,1.75f,1.8f*eyeOpen+.12f)
+                if (eyeOpen > .5f) {
+                    oval("#FFF8EC",-10.9f+eyeShift,75.4f,.52f,.52f)
+                    oval("#FFF8EC",10.1f+eyeShift,75.4f,.52f,.52f)
+                } else {
+                    line(brow,-15f,76f,-6f,76f,1.15f)
+                    line(brow,6f,76f,15f,76f,1.15f)
+                }
+                // Gentle cheek colour, a small nose and an asymmetrical smile.
+                oval(if (woman) "#D89080" else "#A86550",-15f,87f,4.4f,2.2f)
+                oval(if (woman) "#D89080" else "#A86550",15f,87f,4.4f,2.2f)
+                shape(if (woman) "#BF8069" else "#915942",
+                    "M1,82 Q-1,87 1.5,89 Q3.5,90 6,88.5 Q3,89 2.5,87 Q2.2,85 3,82 Z")
+                shape(if (woman) "#965B58" else "#74473F",
+                    "M-4,96 Q2,100.5 10,96 Q7,101.8 2.2,101 Q-1.5,100.5 -4,96 Z")
+                line(if (woman) "#B8776D" else "#985E4E",-1f,103f,5f,103.5f,.65f)
+                if (speaking > .1f) oval("#784A49",3.5f,99f,2.7f,1.2f*speaking)
 
             }
         }
