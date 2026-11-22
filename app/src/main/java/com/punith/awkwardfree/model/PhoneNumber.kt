@@ -12,6 +12,6 @@ internal fun normalizePhone(raw: String): String? {
     val explicit = input.startsWith("+") || input.startsWith("00")
     var digits = input.filter { it in '0'..'9' }
     if (input.startsWith("00")) digits = digits.drop(2)
-    if (!explicit && digits.length == 10 && digits.firstOrNull() in '6'..'9') digits = "91$digits"
+    if (!explicit && digits.length == 10 && digits[0] in '6'..'9') digits = "91$digits"
     return digits.takeIf { it.matches(Regex("[1-9][0-9]{7,14}")) }
 }
