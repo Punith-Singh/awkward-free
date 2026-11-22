@@ -68,7 +68,8 @@ import com.punith.awkwardfree.ui.theme.*
     Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (screen) {
-                "home" -> HomeScreen(dues, name, { navigate("dues") }, { navigate("settled") }, { navigate("add") }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
+                "home" -> HomeScreen(dues, name, { navigate("dues") }, { navigate("settled") }, { navigate("add") }, { navigate("split") }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
+                "split" -> SplitDueScreen({ back() }) { entries -> update(entries + dues); navigate("dues") }
                 "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids) it.copy(lastNudged = opened) else it }) })
                 "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
                 "add" -> AddScreen(if (editing) selected else duplicateOf, { back() }, duplicateOf != null) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; duplicateOf = null; screen = "details" }
@@ -85,7 +86,7 @@ import com.punith.awkwardfree.ui.theme.*
     pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = backup.dues; upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }
 }
 @Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit) {
-    val active = when (screen) { "details", "nudge" -> "dues"; else -> screen }
+    val active = when (screen) { "details", "nudge" -> "dues"; "split" -> "add"; else -> screen }
     val options = listOf(Triple("home", "Home", Icons.Outlined.Home), Triple("dues", "All dues", Icons.Outlined.ListAlt), Triple("add", "Add a due", Icons.Outlined.AddBox), Triple("settled", "Settled", Icons.Outlined.CheckCircle), Triple("settings", "Settings", Icons.Outlined.AccountCircle))
     val shape = RoundedCornerShape(28.dp)
     Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 12.dp, top = 6.dp), contentAlignment = Alignment.Center) {
