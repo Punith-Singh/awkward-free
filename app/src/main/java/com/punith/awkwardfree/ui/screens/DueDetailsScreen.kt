@@ -43,6 +43,19 @@ import com.punith.awkwardfree.util.*
             Text(if (d.owedByMe) "MONEY YOU OWE" else "TAB ACTIVITY", color = Muted, fontWeight = FontWeight.Bold, fontSize = 11.sp)
             Row(verticalAlignment = Alignment.CenterVertically) { Box(Modifier.size(44.dp).background(Lavender, RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Schedule, null, tint = Violet) }; Spacer(Modifier.width(12.dp)); Column { Text(if (d.owedByMe) "You owe ${d.name}" else if (d.lastNudged == 0L) "No nudges yet" else nudgeLabel(d.lastNudged), color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp); Text(if (d.owedByMe) "Track your repayments here." else if (d.lastNudged == 0L) "A friendly reminder is a good start." else "WhatsApp was opened with your message.", color = Muted, fontSize = 12.sp) } }
         }
+        if (!d.owedByMe && d.lastNudged > 0) {
+            val history = if (d.nudgeHistory.isEmpty()) listOf(d.lastNudged) else d.nudgeHistory
+            Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(17.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("REMINDER ACTIVITY", color = Muted, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("WhatsApp opened ${history.size} ${if (history.size == 1) "time" else "times"} (up to the last 100).", color = Ink, fontSize = 13.sp)
+                history.asReversed().take(5).forEach { Text(nudgeLabel(it), color = Muted, fontSize = 12.sp) }
+                if (!d.settled) {
+                    val followUp = java.time.Instant.ofEpochMilli(d.lastNudged).atZone(java.time.ZoneId.systemDefault()).toLocalDate().plusDays(3)
+                    Text(if (java.time.LocalDate.now().isBefore(followUp)) "Suggested follow-up: ${dateLabel(followUp.toString())}" else "You could follow up now.", color = Violet, fontSize = 12.sp)
+                }
+                Text("Opening WhatsApp does not confirm a message was sent.", color = Muted, fontSize = 12.sp)
+            }
+        }
         if (!d.settled && !d.owedByMe) PrimaryButton("Send a nudge", nudge)
         if (!d.settled) OutlinedButton(onClick = { showPayment = true }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp)) { Text("Record a payment", fontWeight = FontWeight.Bold) }
         OutlinedButton(onClick = { if (d.settled && d.remaining().signum() == 0) confirmReset = true else toggle() }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White, contentColor = Ink), border = null) { Text(if (d.settled) "Reopen tab" else "✓   Mark as settled", fontWeight = FontWeight.Bold) }
