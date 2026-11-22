@@ -1,6 +1,7 @@
 package com.punith.awkwardfree.ui.screens
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import com.punith.awkwardfree.model.Due
 import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.money
+import com.punith.awkwardfree.util.upiLink
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -27,10 +29,14 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
 
 @Composable internal fun ListScreen(
     title: String, subtitle: String, dues: List<Due>, settled: Boolean,
-    back: () -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit
+    back: () -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit,
+    upi: String = "", onGroupOpened: (Set<String>) -> Unit = {}
 ) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
+    var pendingGroup by remember { mutableStateOf<List<Due>?>(null) }
+    var groupMessage by remember { mutableStateOf("") }
+    var groupError by remember { mutableStateOf("") }
     var onlyOverdue by remember { mutableStateOf(false) }
     var grouped by remember { mutableStateOf(false) }
     var sort by remember { mutableStateOf("Due date") }
@@ -99,6 +105,19 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
                             context.startActivity(Intent.createChooser(intent, "Share statement"))
                         }) { Text("Share visible tabs") }
                     }
+                    if (!settled && !group.first().owedByMe && group.size > 1) {
+                        OutlinedButton(onClick = {
+                            val lines = group.joinToString("\n") { "• ${it.reason}: ${money(it.remaining().toPlainString())}" }
+                            val totalDue = group.fold(BigDecimal.ZERO) { sum, due -> sum + due.remaining() }
+                            val payment = if (upi.isNotBlank()) {
+                                val aggregate = group.first().copy(amount = totalDue.toPlainString(), paidAmount = "0.00", reason = "Shared tabs")
+                                "\n\nPay via UPI: ${upiLink(upi, aggregate)}\nUPI ID: $upi"
+                            } else ""
+                            groupMessage = "Hi ${group.first().name}, just a friendly reminder about these tabs:\n$lines\nTotal: ${money(totalDue.toPlainString())}$payment"
+                            groupError = ""
+                            pendingGroup = group.toList()
+                        }) { Text("Send one WhatsApp reminder") }
+                    }
                     group.forEach { due -> DueCard(due, { details(due) }, { nudge(due) }) }
                 }
             }
@@ -106,4 +125,32 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
             items(visible, key = { it.id }) { due -> DueCard(due, { details(due) }, { nudge(due) }) }
         }
     }
+    pendingGroup?.let { group ->
+        AlertDialog(
+            onDismissRequest = { pendingGroup = null },
+            title = { Text("Review reminder") },
+            text = {
+                Column {
+                    Text("Review and edit this message before opening WhatsApp.")
+                    OutlinedTextField(value = groupMessage, onValueChange = { groupMessage = it }, modifier = Modifier.fillMaxWidth(), minLines = 4, label = { Text("Message") })
+                    if (groupError.isNotBlank()) Text(groupError, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val phone = group.first().phone
+                    if (groupMessage.isBlank()) groupError = "Write a message first."
+                    else if (!phone.matches(Regex("[1-9][0-9]{7,14}"))) groupError = "A valid number with country code is required."
+                    else try {
+                        val uri = Uri.parse("https://wa.me/$phone?text=${Uri.encode(groupMessage)}")
+                        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                        onGroupOpened(group.map { it.id }.toSet())
+                        pendingGroup = null
+                    } catch (_: Exception) { groupError = "Couldn't open WhatsApp. Try again." }
+                }) { Text("Open WhatsApp") }
+            },
+            dismissButton = { TextButton(onClick = { pendingGroup = null }) { Text("Cancel") } }
+        )
+    }
+
 }
