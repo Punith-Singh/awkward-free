@@ -37,7 +37,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.screens.*
 import com.punith.awkwardfree.ui.theme.*
 
-@Composable internal fun AwkwardApp(store: Store, auth: FirebaseAuth?, accountEmail: String?) {
+@Composable internal fun AwkwardApp(store: Store, auth: FirebaseAuth?, accountEmail: String?, quickAddPending: Boolean = false, onQuickAddHandled: () -> Unit = {}) {
     var dues by remember { mutableStateOf(store.read()) }
     var upi by remember { mutableStateOf(store.upi) }
     var name by remember { mutableStateOf(store.displayName) }
@@ -64,6 +64,12 @@ import com.punith.awkwardfree.ui.theme.*
     fun update(items: List<Due>) { dues = items; store.write(items) }
     fun navigate(target: String) { duplicateOf = null; editing = false; returnToNudge = false; screen = target }
     fun back() { screen = when (screen) { "details" -> if (selected?.settled == true) "settled" else "dues"; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else "home"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; duplicateOf = null; editing = false; returnToNudge = false }
+    LaunchedEffect(quickAddPending) {
+        if (quickAddPending) {
+            navigate("add")
+            onQuickAddHandled()
+        }
+    }
     BackHandler(enabled = screen != "home") { back() }
     Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
