@@ -23,7 +23,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.*
 
-@Composable internal fun DetailScreen(d: Due, back: () -> Unit, edit: () -> Unit, nudge: () -> Unit, toggle: () -> Unit, delete: () -> Unit, recordPayment: (BigDecimal) -> Unit) {
+@Composable internal fun DetailScreen(d: Due, back: () -> Unit, edit: () -> Unit, nudge: () -> Unit, toggle: () -> Unit, delete: () -> Unit, recordPayment: (BigDecimal) -> Unit, duplicate: () -> Unit) {
     var confirmDelete by remember { mutableStateOf(false) }
     var showPayment by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
@@ -46,6 +46,7 @@ import com.punith.awkwardfree.util.*
         if (!d.settled && !d.owedByMe) PrimaryButton("Send a nudge", nudge)
         if (!d.settled) OutlinedButton(onClick = { showPayment = true }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp)) { Text("Record a payment", fontWeight = FontWeight.Bold) }
         OutlinedButton(onClick = { if (d.settled && d.remaining().signum() == 0) confirmReset = true else toggle() }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White, contentColor = Ink), border = null) { Text(if (d.settled) "Reopen tab" else "✓   Mark as settled", fontWeight = FontWeight.Bold) }
+        OutlinedButton(onClick = duplicate, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp)) { Text("Duplicate this tab", fontWeight = FontWeight.Bold) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { TextButton(onClick = edit) { Text("Edit details") }; TextButton(onClick = { confirmDelete = true }) { Text("Delete tab", color = Muted) } }
         Text(if (d.owedByMe) "Record payments you have made and mark the tab settled when paid." else "Once you’ve confirmed the payment, mark this tab as settled.", color = Muted, fontSize = 12.sp)
     }
