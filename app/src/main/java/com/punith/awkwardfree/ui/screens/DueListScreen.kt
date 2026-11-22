@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.punith.awkwardfree.model.Due
 import com.punith.awkwardfree.model.friendBalance
+import com.punith.awkwardfree.model.normalizePhone
+import java.util.Locale
 import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.money
@@ -56,8 +58,8 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
 
     // Missing phone numbers are kept separate: a shared name is not proof of identity.
     val groups = visible.groupBy {
-        if (it.phone.isBlank()) "entry:${it.id}"
-        else "person:${it.name.trim().lowercase()}:${it.phone}:${it.owedByMe}"
+        if (normalizePhone(it.phone) == null) "entry:${it.id}"
+        else "person:${it.name.trim().lowercase(Locale.ROOT)}:${normalizePhone(it.phone)}:${it.owedByMe}"
     }.values.toList()
 
     LazyColumn(
@@ -148,9 +150,9 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val phone = group.first().phone
+                    val phone = normalizePhone(group.first().phone)
                     if (groupMessage.isBlank()) groupError = "Write a message first."
-                    else if (!phone.matches(Regex("[1-9][0-9]{7,14}"))) groupError = "A valid number with country code is required."
+                    else if (phone == null) groupError = "A valid number with country code is required."
                     else try {
                         val uri = Uri.parse("https://wa.me/$phone?text=${Uri.encode(groupMessage)}")
                         context.startActivity(Intent(Intent.ACTION_VIEW, uri))
