@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.punith.awkwardfree.model.Due
+import com.punith.awkwardfree.model.friendBalance
 import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.money
@@ -96,6 +97,15 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
                     val total = group.fold(BigDecimal.ZERO) { sum, due -> sum + if (settled) (due.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) else due.remaining() }
                     Text(group.first().name + if (group.first().owedByMe) " · I owe" else " · Owed to me", color = Ink, fontWeight = FontWeight.Bold)
                     Text("${group.size} ${if (group.size == 1) "tab" else "tabs"} · ${money(total.toPlainString())}", color = Violet)
+                    if (!settled) friendBalance(group.first(), dues)?.let { balance ->
+                        Text("All open tabs: owed to you ${money(balance.owedToMe.toPlainString())} · you owe ${money(balance.iOwe.toPlainString())}", color = Ink, style = MaterialTheme.typography.bodySmall)
+                        val netLabel = when (balance.net.signum()) {
+                            1 -> "Net owed to you: ${money(balance.net.toPlainString())}"
+                            -1 -> "Net you owe: ${money(balance.net.abs().toPlainString())}"
+                            else -> "Net: all square"
+                        }
+                        Text(netLabel, color = Violet, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                    }
                     if (!settled && group.size > 1) {
                         OutlinedButton(onClick = {
                             val lines = group.joinToString("\n") { "• ${it.reason}: ${money(it.remaining().toPlainString())}" }
