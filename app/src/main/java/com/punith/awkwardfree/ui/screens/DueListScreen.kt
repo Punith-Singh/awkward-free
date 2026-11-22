@@ -47,7 +47,7 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
     // Missing phone numbers are kept separate: a shared name is not proof of identity.
     val groups = visible.groupBy {
         if (it.phone.isBlank()) "entry:${it.id}"
-        else "person:${it.name.trim().lowercase()}:${it.phone}"
+        else "person:${it.name.trim().lowercase()}:${it.phone}:${it.owedByMe}"
     }.values.toList()
 
     LazyColumn(
@@ -81,11 +81,11 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
         if (visible.isEmpty()) {
             item { EmptyCard(if (dues.isEmpty()) "No tabs yet" else "No matching tabs", if (dues.isEmpty()) "Your tabs will appear here." else "Try a different search or filter.") }
         } else if (grouped) {
-            item { Text("Tabs are grouped when both the name and phone number match. Tabs without a phone number stay separate.", color = Muted, style = MaterialTheme.typography.bodySmall) }
+            item { Text("Tabs are grouped when name, phone number and direction match. Tabs without a phone number stay separate.", color = Muted, style = MaterialTheme.typography.bodySmall) }
             items(groups, key = { group -> group.first().id }) { group ->
                 Column(Modifier.fillMaxWidth().background(Color(0xFFEEEAFD), RoundedCornerShape(20.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val total = group.fold(BigDecimal.ZERO) { sum, due -> sum + if (settled) (due.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) else due.remaining() }
-                    Text(group.first().name, color = Ink, fontWeight = FontWeight.Bold)
+                    Text(group.first().name + if (group.first().owedByMe) " · I owe" else " · Owed to me", color = Ink, fontWeight = FontWeight.Bold)
                     Text("${group.size} ${if (group.size == 1) "tab" else "tabs"} · ${money(total.toPlainString())}", color = Violet)
                     group.forEach { due -> DueCard(due, { details(due) }, { nudge(due) }) }
                 }
