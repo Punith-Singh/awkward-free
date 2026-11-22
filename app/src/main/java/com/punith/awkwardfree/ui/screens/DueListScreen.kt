@@ -98,9 +98,9 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
                     Text("${group.size} ${if (group.size == 1) "tab" else "tabs"} · ${money(total.toPlainString())}", color = Violet)
                     if (!settled && group.size > 1) {
                         OutlinedButton(onClick = {
-                            val lines = group.joinToString("\\n") { "• ${it.reason}: ${money(it.remaining().toPlainString())}" }
+                            val lines = group.joinToString("\n") { "• ${it.reason}: ${money(it.remaining().toPlainString())}" }
                             val direction = if (group.first().owedByMe) "I owe you" else "You owe me"
-                            val statement = "Hi ${group.first().name}, here's a summary of the tabs:\\n$lines\\nTotal $direction: ${money(total.toPlainString())}"
+                            val statement = "Hi ${group.first().name}, here's a summary of the tabs:\n$lines\nTotal $direction: ${money(total.toPlainString())}"
                             val intent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, statement)
                             context.startActivity(Intent.createChooser(intent, "Share statement"))
                         }) { Text("Share visible tabs") }
