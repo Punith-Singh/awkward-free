@@ -140,12 +140,12 @@ import java.time.LocalDate
             Switch(checked = repeatMonthly, onCheckedChange = { repeatMonthly = it })
         }
         Input(phone, { phone = it }, "WhatsApp number (optional)", "919876543210", KeyboardType.Phone)
-        Text("Include the country code, digits only. Or choose a contact in WhatsApp.", color = Muted, fontSize = 12.sp)
+        Text("Indian mobile numbers default to +91. Include the country code for other numbers.", color = Muted, fontSize = 12.sp)
         if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
         PrimaryButton(if (existing == null || duplicating) "Save this tab" else "Save changes", {
             val n = amount.toBigDecimalOrNull()
-            error = when { name.isBlank() || reason.isBlank() -> "Add a name and reason."; n == null || n <= BigDecimal.ZERO || n.scale() > 2 || n > BigDecimal("10000000") -> "Enter a valid amount greater than zero with up to 2 decimal places."; existing != null && n != null && n < (existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) -> "The total cannot be less than payments already recorded."; existing != null && n != null && n.compareTo(existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) == 0 && !existing.settled -> "The total must be greater than payments already recorded."; phone.isNotBlank() && !phone.matches(Regex("[1-9][0-9]{7,14}")) -> "Enter the phone number with country code, using digits only."; else -> "" }
-            if (error.isEmpty()) save((existing ?: Due(name = "", amount = "", reason = "", date = date)).copy(name = name.trim(), amount = n!!.setScale(2).toPlainString(), reason = reason.trim(), date = date, phone = phone, owedByMe = owedByMe, repeatMonthly = repeatMonthly, recurrenceThrough = recurrenceCursorForSave(existing, LocalDate.parse(date), repeatMonthly, LocalDate.now())))
+            error = when { name.isBlank() || reason.isBlank() -> "Add a name and reason."; n == null || n <= BigDecimal.ZERO || n.scale() > 2 || n > BigDecimal("10000000") -> "Enter a valid amount greater than zero with up to 2 decimal places."; existing != null && n != null && n < (existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) -> "The total cannot be less than payments already recorded."; existing != null && n != null && n.compareTo(existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) == 0 && !existing.settled -> "The total must be greater than payments already recorded."; phone.isNotBlank() && normalizePhone(phone) == null -> "Enter a valid phone number with country code (Indian mobiles default to +91)."; else -> "" }
+            if (error.isEmpty()) save((existing ?: Due(name = "", amount = "", reason = "", date = date)).copy(name = name.trim(), amount = n!!.setScale(2).toPlainString(), reason = reason.trim(), date = date, phone = normalizePhone(phone) ?: "", owedByMe = owedByMe, repeatMonthly = repeatMonthly, recurrenceThrough = recurrenceCursorForSave(existing, LocalDate.parse(date), repeatMonthly, LocalDate.now())))
         })
     }
 }
