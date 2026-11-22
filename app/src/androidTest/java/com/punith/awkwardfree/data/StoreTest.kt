@@ -60,6 +60,15 @@ class StoreTest {
         val legacy = """{"version":1,"dues":[{"id":"1","name":"Ananya","amount":"500.00","reason":"Dinner","date":"2026-11-24"}],"upi":"","displayName":""}"""
         assertFalse(store.parseBackup(legacy).dues.single().owedByMe)
     }
+    @Test fun reminderHistorySurvivesBackupRestore() {
+        val due = Due(name = "Ananya", amount = "500.00", reason = "Dinner", date = "2026-11-24")
+            .recordNudgeOpened(100L).recordNudgeOpened(200L)
+        store.write(listOf(due))
+        val backup = store.parseBackup(store.exportBackup())
+        store.write(emptyList())
+        assertTrue(store.restore(backup))
+        assertEquals(listOf(100L, 200L), store.read().single().nudgeHistory)
+    }
     @Test fun invalidBackupDoesNotOverwriteCurrentRecords() {
         val due = Due(name = "Ananya", amount = "500.00", reason = "Dinner", date = "2026-11-24")
         store.write(listOf(due))
