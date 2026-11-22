@@ -18,7 +18,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug
+      - run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest
       - name: Verify configured Firebase build
         run: |
           python3 - <<'PY'
