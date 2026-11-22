@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>
-    <application android:allowBackup="false" android:label="Awkward-Free" android:theme="@style/Theme.AwkwardFree" android:supportsRtl="true">
+    <application android:allowBackup="false" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:label="Awkward-Free" android:theme="@style/Theme.AwkwardFree" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop">
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
             <intent-filter>
