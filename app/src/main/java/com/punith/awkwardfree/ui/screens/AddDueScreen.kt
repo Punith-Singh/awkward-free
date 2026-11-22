@@ -37,6 +37,7 @@ import java.time.LocalDate
 
 @Composable internal fun AddScreen(existing: Due?, back: () -> Unit, save: (Due) -> Unit) {
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }; var amount by remember(existing?.id) { mutableStateOf(existing?.amount ?: "") }; var reason by remember(existing?.id) { mutableStateOf(existing?.reason ?: "") }; var date by remember(existing?.id) { mutableStateOf(existing?.date ?: LocalDate.now().toString()) }; var phone by remember(existing?.id) { mutableStateOf(existing?.phone ?: "") }; var error by remember { mutableStateOf("") }
+    var owedByMe by remember(existing?.id) { mutableStateOf(existing?.owedByMe ?: false) }
     val context = LocalContext.current
     var voiceMessage by remember { mutableStateOf("") }
     fun fillFromSpeech(transcript: String) {
@@ -113,7 +114,12 @@ import java.time.LocalDate
             }
             Text("Every rupee deserves its way home.", color = Color(0xFFDCD5FF), fontSize = 12.sp)
         }
-        Input(name, { name = it }, "Who owes you?", "Ananya")
+        Text("DIRECTION", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = !owedByMe, onClick = { owedByMe = false }, label = { Text("Owed to me") })
+            FilterChip(selected = owedByMe, onClick = { owedByMe = true }, label = { Text("I owe") })
+        }
+        Input(name, { name = it }, if (owedByMe) "Who do you owe?" else "Who owes you?", "Ananya")
         OutlinedButton(onClick = {
             try {
                 contactLauncher.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI))
@@ -131,7 +137,7 @@ import java.time.LocalDate
         PrimaryButton(if (existing == null) "Save this tab" else "Save changes", {
             val n = amount.toBigDecimalOrNull()
             error = when { name.isBlank() || reason.isBlank() -> "Add a name and reason."; n == null || n <= BigDecimal.ZERO || n.scale() > 2 || n > BigDecimal("10000000") -> "Enter a valid amount greater than zero with up to 2 decimal places."; existing != null && n != null && n < (existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) -> "The total cannot be less than payments already recorded."; existing != null && n != null && n.compareTo(existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) == 0 && !existing.settled -> "The total must be greater than payments already recorded."; phone.isNotBlank() && !phone.matches(Regex("[1-9][0-9]{7,14}")) -> "Enter the phone number with country code, using digits only."; else -> "" }
-            if (error.isEmpty()) save((existing ?: Due(name = "", amount = "", reason = "", date = date)).copy(name = name.trim(), amount = n!!.setScale(2).toPlainString(), reason = reason.trim(), date = date, phone = phone))
+            if (error.isEmpty()) save((existing ?: Due(name = "", amount = "", reason = "", date = date)).copy(name = name.trim(), amount = n!!.setScale(2).toPlainString(), reason = reason.trim(), date = date, phone = phone, owedByMe = owedByMe))
         })
     }
 }
