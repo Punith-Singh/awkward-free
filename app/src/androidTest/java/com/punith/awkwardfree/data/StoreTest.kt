@@ -69,6 +69,16 @@ class StoreTest {
         assertTrue(store.restore(backup))
         assertEquals(listOf(100L, 200L), store.read().single().nudgeHistory)
     }
+    @Test fun monthlyCursorSurvivesBackupRestore() {
+        val due = Due(name = "Rahul", amount = "500.00", reason = "Rent", date = "2026-01-31",
+            repeatMonthly = true, recurrenceThrough = "2026-02-28")
+        store.write(listOf(due))
+        val backup = store.parseBackup(store.exportBackup())
+        store.write(emptyList())
+        assertTrue(store.restore(backup))
+        assertTrue(store.read().single().repeatMonthly)
+        assertEquals("2026-02-28", store.read().single().recurrenceThrough)
+    }
     @Test fun invalidBackupDoesNotOverwriteCurrentRecords() {
         val due = Due(name = "Ananya", amount = "500.00", reason = "Dinner", date = "2026-11-24")
         store.write(listOf(due))
