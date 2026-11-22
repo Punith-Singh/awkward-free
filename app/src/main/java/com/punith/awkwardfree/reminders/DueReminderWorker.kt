@@ -44,11 +44,26 @@ class DueReminderWorker(context: Context, params: WorkerParameters) : Worker(con
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel("due_reminders", "Due date reminders", NotificationManager.IMPORTANCE_DEFAULT))
         val intent = PendingIntent.getActivity(applicationContext, 0, Intent(applicationContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val notification = NotificationCompat.Builder(applicationContext, "due_reminders")
+        val builder = NotificationCompat.Builder(applicationContext, "due_reminders")
             .setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("A little reminder")
             .setContentText(if (count == 1) lines.first() else "You have $count tabs due soon or overdue. Open to review.")
             .setStyle(inbox).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .setAutoCancel(true).setContentIntent(intent).build()
+            .setAutoCancel(true).setContentIntent(intent)
+        if (upcoming.size == 1) {
+            val due = upcoming.first()
+            fun reviewIntent(openNudge: Boolean, requestCode: Int): PendingIntent {
+                val action = Intent(applicationContext, MainActivity::class.java)
+                    .setAction(ACTION_REVIEW_DUE)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra(EXTRA_DUE_ID, due.id)
+                    .putExtra(EXTRA_OWNER_ID, uid ?: "")
+                    .putExtra(EXTRA_OPEN_NUDGE, openNudge)
+                return PendingIntent.getActivity(applicationContext, requestCode, action, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            }
+            if (!due.owedByMe) builder.addAction(0, "Remind", reviewIntent(true, 1002))
+            builder.addAction(0, "Review payment", reviewIntent(false, 1003))
+        }
+        val notification = builder.build()
         try { NotificationManagerCompat.from(applicationContext).notify(1001, notification) } catch (_: SecurityException) { }
         return Result.success()
     }
