@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.provider.ContactsContract
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +46,35 @@ import java.time.LocalDate
         details.reason?.let { reason = it }
         voiceMessage = "Heard: $transcript\nReview all fields and choose a due date before saving."
     }
+    var contactMessage by remember { mutableStateOf("") }
+    val contactLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val uri = result.data?.data
+        if (result.resultCode == Activity.RESULT_OK && uri != null) {
+            try {
+                val columns = arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER)
+                context.contentResolver.query(uri, columns, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val selectedName = cursor.getString(0).orEmpty().trim()
+                        val rawNumber = cursor.getString(1).orEmpty()
+                        var digits = rawNumber.filter { it.isDigit() }
+                        if (digits.startsWith("00")) digits = digits.drop(2)
+                        if (!rawNumber.trim().startsWith("+") && digits.length == 10 && digits.firstOrNull() in listOf('6', '7', '8', '9')) {
+                            digits = "91" + digits
+                        }
+                        if (selectedName.isNotEmpty()) name = selectedName
+                        if (digits.matches(Regex("[1-9][0-9]{7,14}"))) {
+                            phone = digits
+                            contactMessage = "Contact added. Check the country code before saving."
+                        } else {
+                            contactMessage = "Couldn't use this number. Enter a WhatsApp number with its country code."
+                        }
+                    }
+                } ?: run { contactMessage = "Couldn't read this contact. Enter the details manually." }
+            } catch (_: Exception) {
+                contactMessage = "Couldn't read this contact. Enter the details manually."
+            }
+        }
+    }
     val voiceLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val transcript = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
@@ -71,6 +101,7 @@ import java.time.LocalDate
                 }
             })
             Text("Try: Rahul borrowed 500 rupees for lunch", color = Muted, fontSize = 12.sp)
+            Text("Voice recognition may use your device's speech service and send audio for processing.", color = Muted, fontSize = 12.sp)
             if (voiceMessage.isNotBlank()) Text(voiceMessage, color = Ink, fontSize = 13.sp)
         }
         Column(Modifier.fillMaxWidth().background(Deep, RoundedCornerShape(22.dp)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -82,6 +113,14 @@ import java.time.LocalDate
             Text("Every rupee deserves its way home.", color = Color(0xFFDCD5FF), fontSize = 12.sp)
         }
         Input(name, { name = it }, "Who owes you?", "Ananya")
+        OutlinedButton(onClick = {
+            try {
+                contactLauncher.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI))
+            } catch (_: ActivityNotFoundException) {
+                contactMessage = "Contact picker is unavailable. Enter the details manually."
+            }
+        }, modifier = Modifier.fillMaxWidth()) { Text("Choose from contacts") }
+        if (contactMessage.isNotBlank()) Text(contactMessage, color = Muted, fontSize = 12.sp)
         Input(reason, { reason = it }, "What was it for?", "Dinner at Toit")
         val parsed = try { LocalDate.parse(date) } catch (_: Exception) { LocalDate.now() }
         OutlinedButton(onClick = { DatePickerDialog(context, { _, year, month, day -> date = LocalDate.of(year, month + 1, day).toString() }, parsed.year, parsed.monthValue - 1, parsed.dayOfMonth).show() }, modifier = Modifier.fillMaxWidth().height(62.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White), border = null) { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Due  ${dateLabel(date)}", color = Ink); Text("Calendar", color = Violet) } }
