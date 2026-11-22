@@ -53,6 +53,7 @@ import com.punith.awkwardfree.ui.theme.*
     var name by remember { mutableStateOf(store.displayName) }
     var screen by remember { mutableStateOf("home") }
     var selectedId by remember { mutableStateOf<String?>(null) }
+    var splitGroupId by remember { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf(false) }
     var duplicateOf by remember { mutableStateOf<Due?>(null) }
     var returnToNudge by remember { mutableStateOf(false) }
@@ -85,8 +86,8 @@ import com.punith.awkwardfree.ui.theme.*
     }
     val selected = dues.firstOrNull { it.id == selectedId }
     fun update(items: List<Due>) { val current = materializeMonthly(items, java.time.LocalDate.now()); dues = current; store.write(current) }
-    fun navigate(target: String) { duplicateOf = null; editing = false; returnToNudge = false; screen = target }
-    fun back() { screen = when (screen) { "details" -> if (selected?.settled == true) "settled" else "dues"; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else "home"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; duplicateOf = null; editing = false; returnToNudge = false }
+    fun navigate(target: String) { splitGroupId = null; duplicateOf = null; editing = false; returnToNudge = false; screen = target }
+    fun back() { screen = when (screen) { "details" -> if (splitGroupId != null) "splitGroup" else if (selected?.settled == true) "settled" else "dues"; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else "home"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; duplicateOf = null; editing = false; returnToNudge = false }
     LaunchedEffect(quickAddPending) {
         if (quickAddPending) {
             navigate("add")
@@ -111,8 +112,9 @@ import com.punith.awkwardfree.ui.theme.*
     Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (screen) {
-                "home" -> HomeScreen(dues, name, { navigate("dues") }, { navigate("settled") }, { navigate("add") }, { navigate("split") }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
-                "split" -> SplitDueScreen({ back() }) { entries -> update(entries + dues); navigate("dues") }
+                "home" -> HomeScreen(dues, name, { navigate("dues") }, { navigate("settled") }, { navigate("add") }, { navigate("split") }, { id -> splitGroupId = id; screen = "splitGroup" }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
+                "split" -> SplitDueScreen(dues, { back() }) { entries -> update(entries + dues); navigate("dues") }
+                "splitGroup" -> SplitGroupScreen(dues.filter { it.splitGroupId == splitGroupId }, { splitGroupId = null; screen = "home" }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
                 "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) }, { reference -> update(offsetFriendTabs(reference, dues)) })
                 "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
                 "add" -> AddScreen(if (editing) selected else duplicateOf, { back() }, duplicateOf != null) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; duplicateOf = null; screen = "details" }
