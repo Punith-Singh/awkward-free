@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.punith.awkwardfree.model.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.*
+import java.time.LocalDate
 
 @Composable internal fun Heading(eyebrow: String, title: String, subtitle: String) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) { Text(eyebrow.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Violet, letterSpacing = .6.sp); Text(title, fontSize = 27.sp, lineHeight = 32.sp, fontWeight = FontWeight.ExtraBold, color = Ink); Text(subtitle, fontSize = 13.sp, color = Muted) }
@@ -45,11 +46,12 @@ import com.punith.awkwardfree.util.*
     Box(Modifier.size(45.dp).background(Peach, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) { Text(name.trim().take(1).uppercase(), color = Color(0xFFCC6F50), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp) }
 }
 @Composable internal fun DueCard(d: Due, onClick: () -> Unit, onNudge: () -> Unit) {
+    val isOverdue = !d.settled && runCatching { LocalDate.parse(d.date).isBefore(LocalDate.now()) }.getOrDefault(false)
     Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).clickable(onClick = onClick).padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Avatar(d.name); Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) { Text(d.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(d.reason, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            Column(horizontalAlignment = Alignment.End) { Text(money(d.remaining().toPlainString()), color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp); Text(if (d.settled) "Settled" else "Due ${dateLabel(d.date)}", color = Muted, fontSize = 11.sp) }
+            Column(horizontalAlignment = Alignment.End) { Text(money(d.remaining().toPlainString()), color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp); Text(if (d.settled) "Settled" else if (isOverdue) "Overdue · ${dateLabel(d.date)}" else "Due ${dateLabel(d.date)}", color = if (isOverdue) Color(0xFFB43E43) else Muted, fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Normal, fontSize = 11.sp) }
         }
         HorizontalDivider(color = Line)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(if (d.settled) "Marked settled" else nudgeLabel(d.lastNudged), color = Muted, fontSize = 11.sp, modifier = Modifier.weight(1f)); Pill(if (d.settled) "View details" else "Nudge ↗", Lavender, Violet, if (d.settled) onClick else onNudge) }
