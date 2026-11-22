@@ -31,9 +31,9 @@ import java.util.Locale
         Text("You owe ${money(owed.toPlainString())} · Net ${money((total - owed).toPlainString())}", color = Color(0xFFD9D3EE), fontSize = 12.sp)
     }
 }
-@Composable internal fun HomeScreen(dues: List<Due>, name: String, all: () -> Unit, settled: () -> Unit, add: () -> Unit, split: () -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit) {
+@Composable internal fun HomeScreen(dues: List<Due>, name: String, all: () -> Unit, settled: () -> Unit, add: () -> Unit, split: () -> Unit, openSplit: (String) -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit) {
     val open = dues.filterNot { it.settled }
-    val splitGroups = dues.filter { it.splitGroupId.isNotBlank() }.groupBy { it.splitGroupId }.values.toList()
+    val splitGroups = dues.filter { it.splitGroupId.isNotBlank() }.groupBy { it.splitGroupId }.values.filter { group -> group.any { !it.settled } }
     val today = LocalDate.now()
     fun dateOf(due: Due): LocalDate? = runCatching { LocalDate.parse(due.date) }.getOrNull()
     val overdue = open.filter { dateOf(it)?.isBefore(today) == true }
@@ -51,8 +51,8 @@ import java.util.Locale
                 val trackedTotal = group.fold(BigDecimal.ZERO) { sum, due -> sum + (due.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) }
                 Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(group.first().reason, color = Ink, fontWeight = FontWeight.Bold)
-                    Text("${money(trackedTotal.toPlainString())} in friends’ shares · ${group.count { it.settled }} of ${group.size} settled", color = Muted)
-                    TextButton(onClick = all) { Text("View tabs") }
+                    Text("${money(trackedTotal.toPlainString())} in tracked shares · ${group.count { it.settled }} of ${group.size} settled", color = Muted)
+                    TextButton(onClick = { openSplit(group.first().splitGroupId) }) { Text("View tabs") }
                 }
             }
         }
