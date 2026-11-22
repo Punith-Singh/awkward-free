@@ -79,6 +79,16 @@ class StoreTest {
         assertTrue(store.read().single().repeatMonthly)
         assertEquals("2026-02-28", store.read().single().recurrenceThrough)
     }
+    @Test fun splitGroupSurvivesBackupRestoreAndOldDataDefaultsEmpty() {
+        val due = Due(name = "Ananya", amount = "200.00", reason = "Trip", date = "2026-11-24", splitGroupId = "trip-group")
+        store.write(listOf(due))
+        val backup = store.parseBackup(store.exportBackup())
+        store.write(emptyList())
+        assertTrue(store.restore(backup))
+        assertEquals("trip-group", store.read().single().splitGroupId)
+        val legacy = """{"version":4,"dues":[{"id":"1","name":"Ananya","amount":"500.00","reason":"Dinner","date":"2026-11-24"}],"upi":"","displayName":""}"""
+        assertEquals("", store.parseBackup(legacy).dues.single().splitGroupId)
+    }
     @Test fun invalidBackupDoesNotOverwriteCurrentRecords() {
         val due = Due(name = "Ananya", amount = "500.00", reason = "Dinner", date = "2026-11-24")
         store.write(listOf(due))
