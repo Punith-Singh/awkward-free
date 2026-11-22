@@ -33,13 +33,14 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
 @Composable internal fun ListScreen(
     title: String, subtitle: String, dues: List<Due>, settled: Boolean,
     back: () -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit,
-    upi: String = "", onGroupOpened: (Set<String>) -> Unit = {}
+    upi: String = "", onGroupOpened: (Set<String>) -> Unit = {}, onOffset: (Due) -> Unit = {}
 ) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var pendingGroup by remember { mutableStateOf<List<Due>?>(null) }
     var groupMessage by remember { mutableStateOf("") }
     var groupError by remember { mutableStateOf("") }
+    var offsetReference by remember { mutableStateOf<Due?>(null) }
     var onlyOverdue by remember { mutableStateOf(false) }
     var grouped by remember { mutableStateOf(false) }
     var sort by remember { mutableStateOf("Due date") }
@@ -107,6 +108,9 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
                             else -> "Net: all square"
                         }
                         Text(netLabel, color = Violet, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                        if (balance.owedToMe.signum() > 0 && balance.iOwe.signum() > 0) {
+                            OutlinedButton(onClick = { offsetReference = group.first() }) { Text("Offset opposing tabs") }
+                        }
                     }
                     if (!settled && group.size > 1) {
                         OutlinedButton(onClick = {
@@ -135,6 +139,18 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
             }
         } else {
             items(visible, key = { it.id }) { due -> DueCard(due, { details(due) }, { nudge(due) }) }
+        }
+    }
+    offsetReference?.let { reference ->
+        friendBalance(reference, dues)?.let { balance ->
+            val amount = balance.owedToMe.min(balance.iOwe)
+            AlertDialog(
+                onDismissRequest = { offsetReference = null },
+                title = { Text("Offset tabs with ${reference.name}?") },
+                text = { Text("Record ${money(amount.toPlainString())} against tabs in each direction, oldest due first. This changes your records and does not transfer money. Confirm only if you both agreed to offset these amounts.") },
+                confirmButton = { TextButton(onClick = { onOffset(reference); offsetReference = null }) { Text("Record offset") } },
+                dismissButton = { TextButton(onClick = { offsetReference = null }) { Text("Cancel") } }
+            )
         }
     }
     pendingGroup?.let { group ->
