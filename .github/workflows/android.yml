@@ -18,7 +18,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: gradle :app:testDebugUnitTest :app:assembleDebug
+      - run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug
       - name: Verify configured Firebase build
         run: |
           python3 - <<'PY'
@@ -34,6 +34,6 @@ jobs:
           with open('app/google-services.json', 'w') as file:
               json.dump(config, file)
           PY
-          gradle :app:assembleDebug
+          bash ./gradlew :app:assembleDebug
           test -n "$(find app/build/generated -name values.xml -exec grep -l 'default_web_client_id' {} + | head -1)"
           rm app/google-services.json
