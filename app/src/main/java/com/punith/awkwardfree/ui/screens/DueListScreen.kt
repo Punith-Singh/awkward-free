@@ -38,7 +38,7 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
         .filter { !onlyOverdue || overdue(it, today) }
         .let { sequence ->
             when (sort) {
-                "Amount" -> sequence.sortedByDescending { it.remaining() }
+                "Amount" -> sequence.sortedByDescending { if (settled) it.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO else it.remaining() }
                 "Name" -> sequence.sortedBy { it.name.lowercase() }
                 else -> sequence.sortedBy { it.date }
             }
