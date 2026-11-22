@@ -36,3 +36,15 @@ internal fun materializeMonthly(dues: List<Due>, today: LocalDate): List<Due> {
     }
     return if (created.isEmpty() && updated == dues) dues else created.asReversed() + updated
 }
+
+/** Preserve the cursor when stopped; do not create entries for months while stopped. */
+internal fun recurrenceCursorForSave(existing: Due?, date: LocalDate, repeat: Boolean, today: LocalDate): String {
+    val sameDate = existing != null && existing.date == date.toString()
+    if (sameDate && existing != null) {
+        if (repeat && !existing.repeatMonthly && existing.recurrenceThrough.isNotBlank()) {
+            return maxOf(today, date).toString()
+        }
+        return existing.recurrenceThrough.ifBlank { if (repeat) date.toString() else "" }
+    }
+    return if (repeat) date.toString() else ""
+}
