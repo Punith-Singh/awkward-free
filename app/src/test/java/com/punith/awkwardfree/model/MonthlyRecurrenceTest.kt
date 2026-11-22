@@ -24,6 +24,17 @@ class MonthlyRecurrenceTest {
         assertEquals("2026-02-28", again.single { it.repeatMonthly }.recurrenceThrough)
     }
 
+    @Test fun stoppingAndResumingSkipsPausedMonths() {
+        val active = monthly().copy(recurrenceThrough = "2026-02-28")
+        val stopped = active.copy(repeatMonthly = false, recurrenceThrough =
+            recurrenceCursorForSave(active, LocalDate.parse(active.date), false, LocalDate.parse("2026-03-01")))
+        assertEquals("2026-02-28", stopped.recurrenceThrough)
+        val resumedCursor = recurrenceCursorForSave(stopped, LocalDate.parse(stopped.date), true, LocalDate.parse("2026-05-10"))
+        val resumed = stopped.copy(repeatMonthly = true, recurrenceThrough = resumedCursor)
+        assertEquals(listOf(resumed), materializeMonthly(listOf(resumed), LocalDate.parse("2026-05-31")))
+        assertEquals(setOf("2026-01-31", "2026-06-30"), materializeMonthly(listOf(resumed), LocalDate.parse("2026-06-30")).map { it.date }.toSet())
+    }
+
     @Test fun pausedAndLegacyTabsDoNotGenerate() {
         val original = monthly().copy(repeatMonthly = false)
         assertEquals(listOf(original), materializeMonthly(listOf(original), LocalDate.parse("2028-01-01")))
