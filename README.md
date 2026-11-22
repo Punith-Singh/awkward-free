@@ -11,7 +11,9 @@ A native Android app for making informal payment reminders a little less awkward
 - Manual settlement and reopen actions, delete confirmation, recent WhatsApp-open activity and a suggested three-day follow-up. Opening WhatsApp does not confirm that a message was sent.
 - Record partial payments; outstanding balances and UPI links use the remaining amount.
 - Optional daily on-device due-date reminders, sent only to you.
-- Versioned local JSON backup export (version 3; imports versions 1–3) and confirmed restore via the Android file picker.
+- Monthly repeating source tabs generate each due occurrence when the app opens or resumes; the daily reminder checks missed occurrences. Edit the source tab to stop future repeats. Removing the source stops future generation and keeps existing occurrences.
+- A launcher shortcut opens the add-due form.
+- Versioned local JSON backup export (version 4; imports versions 1–4) and confirmed restore via the Android file picker.
 - On-device storage; existing entries from the original version are preserved.
 
 The app does not send messages automatically, confirm WhatsApp delivery, process payments, or verify a UPI transfer. Confirm payment before marking a tab settled. UPI link handling depends on the recipient's messaging and payment apps. Data is local to the device and is removed if app data is cleared or the app is uninstalled.
