@@ -15,6 +15,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.core.content.ContextCompat
 import com.punith.awkwardfree.reminders.scheduleReminders
+import com.punith.awkwardfree.reminders.NotificationTarget
+import com.punith.awkwardfree.reminders.resolveNotificationTarget
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,7 +42,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.screens.*
 import com.punith.awkwardfree.ui.theme.*
 
-@Composable internal fun AwkwardApp(store: Store, auth: FirebaseAuth?, accountEmail: String?, quickAddPending: Boolean = false, onQuickAddHandled: () -> Unit = {}) {
+@Composable internal fun AwkwardApp(store: Store, auth: FirebaseAuth?, accountEmail: String?, quickAddPending: Boolean = false, onQuickAddHandled: () -> Unit = {}, notificationTarget: NotificationTarget? = null, onNotificationHandled: () -> Unit = {}) {
     var dues by remember(store) {
         val saved = store.read()
         val current = materializeMonthly(saved, java.time.LocalDate.now())
@@ -89,6 +91,20 @@ import com.punith.awkwardfree.ui.theme.*
         if (quickAddPending) {
             navigate("add")
             onQuickAddHandled()
+        }
+    }
+    LaunchedEffect(notificationTarget) {
+        val target = notificationTarget
+        if (target != null) {
+            val resolved = resolveNotificationTarget(target, auth?.currentUser?.uid ?: "", dues)
+            if (resolved != null) {
+                duplicateOf = null
+                editing = false
+                returnToNudge = false
+                selectedId = resolved.first
+                screen = resolved.second
+            }
+            onNotificationHandled()
         }
     }
     BackHandler(enabled = screen != "home") { back() }

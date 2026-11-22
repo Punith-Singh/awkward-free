@@ -14,14 +14,23 @@ import com.punith.awkwardfree.data.*
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.punith.awkwardfree.navigation.*
+import com.punith.awkwardfree.reminders.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.ui.screens.OnboardingScreen
 
 class MainActivity : ComponentActivity() {
     private var quickAddPending by mutableStateOf(false)
+    private var pendingNotification by mutableStateOf<NotificationTarget?>(null)
 
     private fun handleShortcut(intent: Intent?) {
-        if (intent?.action == "com.punith.awkwardfree.action.QUICK_ADD") {
+        if (intent?.action == ACTION_REVIEW_DUE) {
+            val dueId = intent.getStringExtra(EXTRA_DUE_ID)
+            val owner = intent.getStringExtra(EXTRA_OWNER_ID)
+            if (!dueId.isNullOrBlank() && owner != null) {
+                pendingNotification = NotificationTarget(dueId, owner, intent.getBooleanExtra(EXTRA_OPEN_NUDGE, false))
+            }
+            intent.action = null
+        } else if (intent?.action == "com.punith.awkwardfree.action.QUICK_ADD") {
             quickAddPending = true
             intent.action = null
         }
@@ -52,7 +61,7 @@ class MainActivity : ComponentActivity() {
             val onboardingPrefs = remember { getSharedPreferences("awkward_free_onboarding", MODE_PRIVATE) }
             var onboardingComplete by remember { mutableStateOf(onboardingPrefs.getBoolean("complete", false)) }
             if (onboardingComplete) {
-                key(uid) { AwkwardApp(store, auth, user?.email, quickAddPending) { quickAddPending = false } }
+                key(uid) { AwkwardApp(store, auth, user?.email, quickAddPending, { quickAddPending = false }, pendingNotification) { pendingNotification = null } }
             } else {
                 OnboardingScreen {
                     onboardingPrefs.edit().putBoolean("complete", true).apply()
