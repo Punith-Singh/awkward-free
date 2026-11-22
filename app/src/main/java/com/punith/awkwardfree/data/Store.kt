@@ -22,12 +22,12 @@ internal class Store(context: Context, userId: String? = null) {
         set(value) { prefs.edit().putBoolean("reminders_enabled", value).apply() }
     fun read(): List<Due> = try { parseDues(JSONArray(prefs.getString("dues", "[]"))) } catch (_: Exception) { emptyList() }
     fun write(dues: List<Due>) { prefs.edit().putString("dues", encodeDues(dues).toString()).apply() }
-    fun exportBackup(): String = JSONObject().put("version", 3).put("dues", encodeDues(read()))
+    fun exportBackup(): String = JSONObject().put("version", 4).put("dues", encodeDues(read()))
         .put("upi", upi).put("displayName", displayName).toString(2)
     fun parseBackup(text: String): Backup {
         require(text.length <= 2_000_000) { "Backup file is too large." }
         val json = JSONObject(text)
-        require(json.getInt("version") in 1..3) { "This backup version isn't supported." }
+        require(json.getInt("version") in 1..4) { "This backup version isn't supported." }
         val entries = json.getJSONArray("dues")
         require(entries.length() <= 10000) { "Too many records." }
         val items = parseDues(entries)
@@ -41,7 +41,7 @@ internal class Store(context: Context, userId: String? = null) {
         .putString("upi", backup.upi).putString("display_name", backup.displayName).commit()
     private fun encodeDues(dues: List<Due>): JSONArray = JSONArray().also { array -> dues.forEach { d ->
         array.put(JSONObject().put("id", d.id).put("name", d.name).put("amount", d.amount).put("reason", d.reason)
-            .put("date", d.date).put("phone", d.phone).put("settled", d.settled).put("lastNudged", d.lastNudged).put("paidAmount", d.paidAmount).put("owedByMe", d.owedByMe).put("nudgeHistory", JSONArray(d.nudgeHistory)))
+            .put("date", d.date).put("phone", d.phone).put("settled", d.settled).put("lastNudged", d.lastNudged).put("paidAmount", d.paidAmount).put("owedByMe", d.owedByMe).put("nudgeHistory", JSONArray(d.nudgeHistory)).put("repeatMonthly", d.repeatMonthly).put("recurrenceThrough", d.recurrenceThrough))
     } }
     private fun parseDues(data: JSONArray): List<Due> = (0 until data.length()).map { i -> data.getJSONObject(i).let { o ->
         val amount = o.getString("amount").toBigDecimal(); val paid = o.optString("paidAmount", "0.00").toBigDecimal()
@@ -52,6 +52,8 @@ internal class Store(context: Context, userId: String? = null) {
         val historyJson = o.optJSONArray("nudgeHistory") ?: JSONArray()
         require(historyJson.length() <= 100) { "Too much reminder history." }
         val history = (0 until historyJson.length()).map { historyJson.getLong(it).also { timestamp -> require(timestamp > 0) } }
-        Due(id, name, amount.toPlainString(), reason, date, phone, o.optBoolean("settled"), o.optLong("lastNudged"), paid.toPlainString(), o.optBoolean("owedByMe", false), history)
+        val recurrenceThrough = o.optString("recurrenceThrough", "")
+        if (recurrenceThrough.isNotEmpty()) LocalDate.parse(recurrenceThrough)
+        Due(id, name, amount.toPlainString(), reason, date, phone, o.optBoolean("settled"), o.optLong("lastNudged"), paid.toPlainString(), o.optBoolean("owedByMe", false), history, o.optBoolean("repeatMonthly", false), recurrenceThrough)
     } }
 }
