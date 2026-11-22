@@ -7,7 +7,8 @@ internal data class Due(
     val id: String = UUID.randomUUID().toString(), val name: String, val amount: String,
     val reason: String, val date: String, val phone: String = "", val settled: Boolean = false,
     val lastNudged: Long = 0L, val paidAmount: String = "0.00", val owedByMe: Boolean = false,
-    val nudgeHistory: List<Long> = emptyList()
+    val nudgeHistory: List<Long> = emptyList(),
+    val repeatMonthly: Boolean = false, val recurrenceThrough: String = ""
 ) {
     fun recordNudgeOpened(at: Long): Due {
         require(at > 0 && !settled && !owedByMe)

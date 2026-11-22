@@ -10,6 +10,9 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.core.content.ContextCompat
 import com.punith.awkwardfree.reminders.scheduleReminders
 import com.google.firebase.auth.FirebaseAuth
@@ -37,8 +40,13 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.screens.*
 import com.punith.awkwardfree.ui.theme.*
 
-@Composable internal fun AwkwardApp(store: Store, auth: FirebaseAuth?, accountEmail: String?) {
-    var dues by remember { mutableStateOf(store.read()) }
+@Composable internal fun AwkwardApp(store: Store, auth: FirebaseAuth?, accountEmail: String?, quickAddPending: Boolean = false, onQuickAddHandled: () -> Unit = {}) {
+    var dues by remember(store) {
+        val saved = store.read()
+        val current = materializeMonthly(saved, java.time.LocalDate.now())
+        if (current != saved) store.write(current)
+        mutableStateOf(current)
+    }
     var upi by remember { mutableStateOf(store.upi) }
     var name by remember { mutableStateOf(store.displayName) }
     var screen by remember { mutableStateOf("home") }
@@ -47,6 +55,19 @@ import com.punith.awkwardfree.ui.theme.*
     var duplicateOf by remember { mutableStateOf<Due?>(null) }
     var returnToNudge by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, store) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val saved = store.read()
+                val refreshed = materializeMonthly(saved, java.time.LocalDate.now())
+                if (refreshed != saved) store.write(refreshed)
+                dues = refreshed
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     var reminderEnabled by remember { mutableStateOf(store.remindersEnabled) }
     var backupStatus by remember { mutableStateOf("") }
     var pendingBackup by remember { mutableStateOf<Backup?>(null) }
@@ -61,9 +82,15 @@ import com.punith.awkwardfree.ui.theme.*
         if (uri != null) try { val data = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { reader -> val chars = CharArray(2_000_001); var size = 0; while (size < chars.size) { val n = reader.read(chars, size, chars.size - size); if (n < 0) break; size += n }; require(size <= 2_000_000); String(chars, 0, size) } ?: error("Cannot open file"); pendingBackup = store.parseBackup(data); backupStatus = "" } catch (_: Exception) { backupStatus = "This backup couldn't be read. Your current data is unchanged." }
     }
     val selected = dues.firstOrNull { it.id == selectedId }
-    fun update(items: List<Due>) { dues = items; store.write(items) }
+    fun update(items: List<Due>) { val current = materializeMonthly(items, java.time.LocalDate.now()); dues = current; store.write(current) }
     fun navigate(target: String) { duplicateOf = null; editing = false; returnToNudge = false; screen = target }
     fun back() { screen = when (screen) { "details" -> if (selected?.settled == true) "settled" else "dues"; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else "home"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; duplicateOf = null; editing = false; returnToNudge = false }
+    LaunchedEffect(quickAddPending) {
+        if (quickAddPending) {
+            navigate("add")
+            onQuickAddHandled()
+        }
+    }
     BackHandler(enabled = screen != "home") { back() }
     Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -73,7 +100,7 @@ import com.punith.awkwardfree.ui.theme.*
                 "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) })
                 "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
                 "add" -> AddScreen(if (editing) selected else duplicateOf, { back() }, duplicateOf != null) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; duplicateOf = null; screen = "details" }
-                "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00"); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
+                "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00", repeatMonthly = false, recurrenceThrough = ""); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
                 "nudge" -> if (selected != null && !selected.owedByMe) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.recordNudgeOpened(System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
                 "account" -> AccountScreen(auth, accountEmail) { screen = "settings" }
                 "settings" -> SettingsScreen(upi, name, reminderEnabled, backupStatus, accountEmail, { screen = "account" }, { back() }, { enabled ->
@@ -83,7 +110,7 @@ import com.punith.awkwardfree.ui.theme.*
             }
         }
     }
-    pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = backup.dues; upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }
+    pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = materializeMonthly(backup.dues, java.time.LocalDate.now()); store.write(dues); upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }
 }
 @Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit) {
     val active = when (screen) { "details", "nudge" -> "dues"; "split" -> "add"; else -> screen }

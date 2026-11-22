@@ -1,6 +1,7 @@
 package com.punith.awkwardfree
 
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -17,8 +18,23 @@ import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.ui.screens.OnboardingScreen
 
 class MainActivity : ComponentActivity() {
+    private var quickAddPending by mutableStateOf(false)
+
+    private fun handleShortcut(intent: Intent?) {
+        if (intent?.action == "com.punith.awkwardfree.action.QUICK_ADD") {
+            quickAddPending = true
+            intent.action = null
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShortcut(intent)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleShortcut(intent)
         window.statusBarColor = android.graphics.Color.rgb(245, 244, 251)
         window.navigationBarColor = android.graphics.Color.WHITE
         @Suppress("DEPRECATION")
@@ -36,7 +52,7 @@ class MainActivity : ComponentActivity() {
             val onboardingPrefs = remember { getSharedPreferences("awkward_free_onboarding", MODE_PRIVATE) }
             var onboardingComplete by remember { mutableStateOf(onboardingPrefs.getBoolean("complete", false)) }
             if (onboardingComplete) {
-                key(uid) { AwkwardApp(store, auth, user?.email) }
+                key(uid) { AwkwardApp(store, auth, user?.email, quickAddPending) { quickAddPending = false } }
             } else {
                 OnboardingScreen {
                     onboardingPrefs.edit().putBoolean("complete", true).apply()

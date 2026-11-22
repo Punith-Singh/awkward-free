@@ -38,6 +38,7 @@ import com.punith.awkwardfree.util.*
             Text(money(if (d.settled) d.amount else d.remaining().toPlainString()), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 38.sp)
             if (d.paidAmount.toBigDecimalOrNull() != null && d.paidAmount.toBigDecimal() > BigDecimal.ZERO) Text("Paid ${money(d.paidAmount)} of ${money(d.amount)}", color = Color(0xFFDCD5FF), fontSize = 13.sp)
             Text("Due ${dateLabel(d.date)}", color = Color(0xFFDCD5FF), fontSize = 13.sp)
+            if (d.repeatMonthly) Text("Repeats monthly · edit this tab to stop", color = Color(0xFFDCD5FF), fontSize = 12.sp)
         }
         Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(17.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(if (d.owedByMe) "MONEY YOU OWE" else "TAB ACTIVITY", color = Muted, fontWeight = FontWeight.Bold, fontSize = 11.sp)

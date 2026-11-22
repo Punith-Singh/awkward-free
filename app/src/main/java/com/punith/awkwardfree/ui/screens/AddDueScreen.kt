@@ -38,6 +38,7 @@ import java.time.LocalDate
 @Composable internal fun AddScreen(existing: Due?, back: () -> Unit, duplicating: Boolean = false, save: (Due) -> Unit) {
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }; var amount by remember(existing?.id) { mutableStateOf(existing?.amount ?: "") }; var reason by remember(existing?.id) { mutableStateOf(existing?.reason ?: "") }; var date by remember(existing?.id) { mutableStateOf(existing?.date ?: LocalDate.now().toString()) }; var phone by remember(existing?.id) { mutableStateOf(existing?.phone ?: "") }; var error by remember { mutableStateOf("") }
     var owedByMe by remember(existing?.id) { mutableStateOf(existing?.owedByMe ?: false) }
+    var repeatMonthly by remember(existing?.id) { mutableStateOf(existing?.repeatMonthly ?: false) }
     val context = LocalContext.current
     var voiceMessage by remember { mutableStateOf("") }
     fun fillFromSpeech(transcript: String) {
@@ -131,13 +132,20 @@ import java.time.LocalDate
         Input(reason, { reason = it }, "What was it for?", "Dinner at Toit")
         val parsed = try { LocalDate.parse(date) } catch (_: Exception) { LocalDate.now() }
         OutlinedButton(onClick = { DatePickerDialog(context, { _, year, month, day -> date = LocalDate.of(year, month + 1, day).toString() }, parsed.year, parsed.monthValue - 1, parsed.dayOfMonth).show() }, modifier = Modifier.fillMaxWidth().height(62.dp), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White), border = null) { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Due  ${dateLabel(date)}", color = Ink); Text("Calendar", color = Violet) } }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Column(Modifier.weight(1f)) {
+                Text("Repeat monthly", fontWeight = FontWeight.Bold, color = Ink)
+                Text("Creates a new tab each month. Missed months appear when the app opens.", color = Muted, fontSize = 12.sp)
+            }
+            Switch(checked = repeatMonthly, onCheckedChange = { repeatMonthly = it })
+        }
         Input(phone, { phone = it }, "WhatsApp number (optional)", "919876543210", KeyboardType.Phone)
         Text("Include the country code, digits only. Or choose a contact in WhatsApp.", color = Muted, fontSize = 12.sp)
         if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
         PrimaryButton(if (existing == null || duplicating) "Save this tab" else "Save changes", {
             val n = amount.toBigDecimalOrNull()
             error = when { name.isBlank() || reason.isBlank() -> "Add a name and reason."; n == null || n <= BigDecimal.ZERO || n.scale() > 2 || n > BigDecimal("10000000") -> "Enter a valid amount greater than zero with up to 2 decimal places."; existing != null && n != null && n < (existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) -> "The total cannot be less than payments already recorded."; existing != null && n != null && n.compareTo(existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) == 0 && !existing.settled -> "The total must be greater than payments already recorded."; phone.isNotBlank() && !phone.matches(Regex("[1-9][0-9]{7,14}")) -> "Enter the phone number with country code, using digits only."; else -> "" }
-            if (error.isEmpty()) save((existing ?: Due(name = "", amount = "", reason = "", date = date)).copy(name = name.trim(), amount = n!!.setScale(2).toPlainString(), reason = reason.trim(), date = date, phone = phone, owedByMe = owedByMe))
+            if (error.isEmpty()) save((existing ?: Due(name = "", amount = "", reason = "", date = date)).copy(name = name.trim(), amount = n!!.setScale(2).toPlainString(), reason = reason.trim(), date = date, phone = phone, owedByMe = owedByMe, repeatMonthly = repeatMonthly, recurrenceThrough = recurrenceCursorForSave(existing, LocalDate.parse(date), repeatMonthly, LocalDate.now())))
         })
     }
 }
