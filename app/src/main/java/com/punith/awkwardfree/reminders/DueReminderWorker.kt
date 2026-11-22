@@ -18,6 +18,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.punith.awkwardfree.MainActivity
 import com.punith.awkwardfree.data.Store
+import com.punith.awkwardfree.model.materializeMonthly
 import com.punith.awkwardfree.util.money
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
@@ -33,7 +34,7 @@ class DueReminderWorker(context: Context, params: WorkerParameters) : Worker(con
         if (!store.remindersEnabled) return Result.success()
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return Result.success()
         val today = LocalDate.now()
-        val upcoming = store.read().filter { !it.settled && try { !LocalDate.parse(it.date).isAfter(today.plusDays(1)) } catch (_: Exception) { false } }.sortedBy { it.date }
+        val upcoming = materializeMonthly(store.read(), today).filter { !it.settled && try { !LocalDate.parse(it.date).isAfter(today.plusDays(1)) } catch (_: Exception) { false } }.sortedBy { it.date }
         val count = upcoming.size
         if (count == 0) return Result.success()
         val lines = upcoming.take(5).map { due -> (if (due.owedByMe) "You owe " else "Owed by ") + due.name + ": " + money(due.remaining().toPlainString()) }
