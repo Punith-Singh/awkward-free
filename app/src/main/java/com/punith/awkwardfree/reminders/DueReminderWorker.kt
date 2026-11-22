@@ -18,6 +18,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.punith.awkwardfree.MainActivity
 import com.punith.awkwardfree.data.Store
+import com.punith.awkwardfree.util.money
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDate
@@ -32,14 +33,20 @@ class DueReminderWorker(context: Context, params: WorkerParameters) : Worker(con
         if (!store.remindersEnabled) return Result.success()
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return Result.success()
         val today = LocalDate.now()
-        val count = store.read().count { !it.settled && try { !LocalDate.parse(it.date).isAfter(today.plusDays(1)) } catch (_: Exception) { false } }
+        val upcoming = store.read().filter { !it.settled && try { !LocalDate.parse(it.date).isAfter(today.plusDays(1)) } catch (_: Exception) { false } }.sortedBy { it.date }
+        val count = upcoming.size
         if (count == 0) return Result.success()
+        val lines = upcoming.take(5).map { due -> (if (due.owedByMe) "You owe " else "Owed by ") + due.name + ": " + money(due.remaining().toPlainString()) }
+        val inbox = NotificationCompat.InboxStyle().setBigContentTitle("Tabs due soon or overdue")
+        lines.forEach { inbox.addLine(it) }
+        if (count > lines.size) inbox.setSummaryText("And ${count - lines.size} more")
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel("due_reminders", "Due date reminders", NotificationManager.IMPORTANCE_DEFAULT))
         val intent = PendingIntent.getActivity(applicationContext, 0, Intent(applicationContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(applicationContext, "due_reminders")
             .setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("A little reminder")
-            .setContentText("You have $count ${if (count == 1) "tab" else "tabs"} due soon or overdue. Open the app to review.")
+            .setContentText(if (count == 1) lines.first() else "You have $count tabs due soon or overdue. Open to review.")
+            .setStyle(inbox).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setAutoCancel(true).setContentIntent(intent).build()
         try { NotificationManagerCompat.from(applicationContext).notify(1001, notification) } catch (_: SecurityException) { }
         return Result.success()
