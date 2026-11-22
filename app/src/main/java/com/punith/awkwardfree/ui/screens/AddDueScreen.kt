@@ -35,7 +35,7 @@ import com.punith.awkwardfree.util.*
 import java.math.BigDecimal
 import java.time.LocalDate
 
-@Composable internal fun AddScreen(existing: Due?, back: () -> Unit, save: (Due) -> Unit) {
+@Composable internal fun AddScreen(existing: Due?, back: () -> Unit, duplicating: Boolean = false, save: (Due) -> Unit) {
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }; var amount by remember(existing?.id) { mutableStateOf(existing?.amount ?: "") }; var reason by remember(existing?.id) { mutableStateOf(existing?.reason ?: "") }; var date by remember(existing?.id) { mutableStateOf(existing?.date ?: LocalDate.now().toString()) }; var phone by remember(existing?.id) { mutableStateOf(existing?.phone ?: "") }; var error by remember { mutableStateOf("") }
     var owedByMe by remember(existing?.id) { mutableStateOf(existing?.owedByMe ?: false) }
     val context = LocalContext.current
@@ -90,8 +90,8 @@ import java.time.LocalDate
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        BackHeader(if (existing == null) "New tab" else "Edit tab", back)
-        Heading("Keep it simple", if (existing == null) "Add a little tab." else "Edit your tab.", "Just the details you need to remember.")
+        BackHeader(if (duplicating) "Duplicate tab" else if (existing == null) "New tab" else "Edit tab", back)
+        Heading("Keep it simple", if (duplicating) "Duplicate your tab." else if (existing == null) "Add a little tab." else "Edit your tab.", "Just the details you need to remember.")
         if (existing == null) {
             VoiceCaptureButton(onText = ::fillFromSpeech, fallback = {
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -134,7 +134,7 @@ import java.time.LocalDate
         Input(phone, { phone = it }, "WhatsApp number (optional)", "919876543210", KeyboardType.Phone)
         Text("Include the country code, digits only. Or choose a contact in WhatsApp.", color = Muted, fontSize = 12.sp)
         if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
-        PrimaryButton(if (existing == null) "Save this tab" else "Save changes", {
+        PrimaryButton(if (existing == null || duplicating) "Save this tab" else "Save changes", {
             val n = amount.toBigDecimalOrNull()
             error = when { name.isBlank() || reason.isBlank() -> "Add a name and reason."; n == null || n <= BigDecimal.ZERO || n.scale() > 2 || n > BigDecimal("10000000") -> "Enter a valid amount greater than zero with up to 2 decimal places."; existing != null && n != null && n < (existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) -> "The total cannot be less than payments already recorded."; existing != null && n != null && n.compareTo(existing.paidAmount.toBigDecimalOrNull() ?: BigDecimal.ZERO) == 0 && !existing.settled -> "The total must be greater than payments already recorded."; phone.isNotBlank() && !phone.matches(Regex("[1-9][0-9]{7,14}")) -> "Enter the phone number with country code, using digits only."; else -> "" }
             if (error.isEmpty()) save((existing ?: Due(name = "", amount = "", reason = "", date = date)).copy(name = name.trim(), amount = n!!.setScale(2).toPlainString(), reason = reason.trim(), date = date, phone = phone, owedByMe = owedByMe))
