@@ -10,6 +10,9 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.core.content.ContextCompat
 import com.punith.awkwardfree.reminders.scheduleReminders
 import com.google.firebase.auth.FirebaseAuth
@@ -52,6 +55,19 @@ import com.punith.awkwardfree.ui.theme.*
     var duplicateOf by remember { mutableStateOf<Due?>(null) }
     var returnToNudge by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, store) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val saved = store.read()
+                val refreshed = materializeMonthly(saved, java.time.LocalDate.now())
+                if (refreshed != saved) store.write(refreshed)
+                dues = refreshed
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     var reminderEnabled by remember { mutableStateOf(store.remindersEnabled) }
     var backupStatus by remember { mutableStateOf("") }
     var pendingBackup by remember { mutableStateOf<Backup?>(null) }
