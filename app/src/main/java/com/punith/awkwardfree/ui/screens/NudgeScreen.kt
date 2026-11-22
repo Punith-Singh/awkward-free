@@ -46,7 +46,8 @@ import com.punith.awkwardfree.util.*
         PrimaryButton("Continue to WhatsApp", {
             if (text.isBlank()) error = "Write a message first." else try {
                 val shareText = if (upi.isBlank()) text else "$text\n\nPay via UPI: ${upiLink(upi, d)}\nUPI ID: $upi"
-                val url = "https://wa.me/${d.phone}?text=${Uri.encode(shareText)}"
+                val number = normalizePhone(d.phone)
+                val url = if (number == null) "https://wa.me/?text=${Uri.encode(shareText)}" else "https://wa.me/$number?text=${Uri.encode(shareText)}"
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 onOpened()
             } catch (_: Exception) { error = "Couldn't open WhatsApp. Check that WhatsApp or a browser is installed." }
