@@ -29,7 +29,7 @@ import java.math.BigDecimal
         Text("You owe ${money(owed.toPlainString())} · Net ${money((total - owed).toPlainString())}", color = Color(0xFFD9D3EE), fontSize = 12.sp)
     }
 }
-@Composable internal fun HomeScreen(dues: List<Due>, name: String, all: () -> Unit, settled: () -> Unit, add: () -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit) {
+@Composable internal fun HomeScreen(dues: List<Due>, name: String, all: () -> Unit, settled: () -> Unit, add: () -> Unit, split: () -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit) {
     val open = dues.filterNot { it.settled }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 22.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column { Text("GOOD TO SEE YOU", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(5.dp)); Text(if (name.isBlank()) "Hey there ✨" else "Hey, ${name.trim()} ✨", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold) }; Box(Modifier.size(40.dp).background(Violet, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) { Text(name.trim().take(1).uppercase().ifEmpty { "✦" }, color = Color.White, fontWeight = FontWeight.Bold) } } }
@@ -39,5 +39,6 @@ import java.math.BigDecimal
         if (open.isEmpty()) item { EmptyCard("Nothing to chase ✨", "Add a due and make asking easier.") }
         items(open.take(2), key = { it.id }) { d -> DueCard(d, { details(d) }, { nudge(d) }) }
         item { PrimaryButton("＋   Add a due", add) }
+        item { OutlinedButton(onClick = split, modifier = Modifier.fillMaxWidth()) { Text("Split an expense") } }
     }
 }
