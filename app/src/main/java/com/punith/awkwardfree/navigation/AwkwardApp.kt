@@ -44,6 +44,7 @@ import com.punith.awkwardfree.ui.theme.*
     var screen by remember { mutableStateOf("home") }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf(false) }
+    var duplicateOf by remember { mutableStateOf<Due?>(null) }
     var returnToNudge by remember { mutableStateOf(false) }
     val context = LocalContext.current
     var reminderEnabled by remember { mutableStateOf(store.remindersEnabled) }
@@ -61,8 +62,8 @@ import com.punith.awkwardfree.ui.theme.*
     }
     val selected = dues.firstOrNull { it.id == selectedId }
     fun update(items: List<Due>) { dues = items; store.write(items) }
-    fun navigate(target: String) { editing = false; returnToNudge = false; screen = target }
-    fun back() { screen = when (screen) { "details" -> if (selected?.settled == true) "settled" else "dues"; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else "home"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; editing = false; returnToNudge = false }
+    fun navigate(target: String) { duplicateOf = null; editing = false; returnToNudge = false; screen = target }
+    fun back() { screen = when (screen) { "details" -> if (selected?.settled == true) "settled" else "dues"; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else "home"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; duplicateOf = null; editing = false; returnToNudge = false }
     BackHandler(enabled = screen != "home") { back() }
     Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -70,9 +71,9 @@ import com.punith.awkwardfree.ui.theme.*
                 "home" -> HomeScreen(dues, name, { navigate("dues") }, { navigate("settled") }, { navigate("add") }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
                 "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
                 "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
-                "add" -> AddScreen(if (editing) selected else null, { back() }) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; screen = "details" }
-                "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }) else EmptyFallback { screen = "home" }
-                "nudge" -> if (selected != null) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.copy(lastNudged = System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
+                "add" -> AddScreen(if (editing) selected else duplicateOf, { back() }, duplicateOf != null) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; duplicateOf = null; screen = "details" }
+                "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, paidAmount = "0.00"); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
+                "nudge" -> if (selected != null && !selected.owedByMe) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.copy(lastNudged = System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
                 "account" -> AccountScreen(auth, accountEmail) { screen = "settings" }
                 "settings" -> SettingsScreen(upi, name, reminderEnabled, backupStatus, accountEmail, { screen = "account" }, { back() }, { enabled ->
                     if (enabled && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)

@@ -1,5 +1,6 @@
 package com.punith.awkwardfree.ui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,7 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
     title: String, subtitle: String, dues: List<Due>, settled: Boolean,
     back: () -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit
 ) {
+    val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var onlyOverdue by remember { mutableStateOf(false) }
     var grouped by remember { mutableStateOf(false) }
@@ -47,7 +50,7 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
     // Missing phone numbers are kept separate: a shared name is not proof of identity.
     val groups = visible.groupBy {
         if (it.phone.isBlank()) "entry:${it.id}"
-        else "person:${it.name.trim().lowercase()}:${it.phone}"
+        else "person:${it.name.trim().lowercase()}:${it.phone}:${it.owedByMe}"
     }.values.toList()
 
     LazyColumn(
@@ -81,12 +84,21 @@ private fun overdue(due: Due, today: LocalDate): Boolean =
         if (visible.isEmpty()) {
             item { EmptyCard(if (dues.isEmpty()) "No tabs yet" else "No matching tabs", if (dues.isEmpty()) "Your tabs will appear here." else "Try a different search or filter.") }
         } else if (grouped) {
-            item { Text("Tabs are grouped when both the name and phone number match. Tabs without a phone number stay separate.", color = Muted, style = MaterialTheme.typography.bodySmall) }
+            item { Text("Tabs are grouped when name, phone number and direction match. Tabs without a phone number stay separate.", color = Muted, style = MaterialTheme.typography.bodySmall) }
             items(groups, key = { group -> group.first().id }) { group ->
                 Column(Modifier.fillMaxWidth().background(Color(0xFFEEEAFD), RoundedCornerShape(20.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val total = group.fold(BigDecimal.ZERO) { sum, due -> sum + if (settled) (due.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) else due.remaining() }
-                    Text(group.first().name, color = Ink, fontWeight = FontWeight.Bold)
+                    Text(group.first().name + if (group.first().owedByMe) " · I owe" else " · Owed to me", color = Ink, fontWeight = FontWeight.Bold)
                     Text("${group.size} ${if (group.size == 1) "tab" else "tabs"} · ${money(total.toPlainString())}", color = Violet)
+                    if (!settled && group.size > 1) {
+                        OutlinedButton(onClick = {
+                            val lines = group.joinToString("\\n") { "• ${it.reason}: ${money(it.remaining().toPlainString())}" }
+                            val direction = if (group.first().owedByMe) "I owe you" else "You owe me"
+                            val statement = "Hi ${group.first().name}, here's a summary of the tabs:\\n$lines\\nTotal $direction: ${money(total.toPlainString())}"
+                            val intent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, statement)
+                            context.startActivity(Intent.createChooser(intent, "Share statement"))
+                        }) { Text("Share visible tabs") }
+                    }
                     group.forEach { due -> DueCard(due, { details(due) }, { nudge(due) }) }
                 }
             }

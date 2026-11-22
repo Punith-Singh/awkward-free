@@ -50,11 +50,11 @@ import java.time.LocalDate
     Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).clickable(onClick = onClick).padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Avatar(d.name); Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) { Text(d.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(d.reason, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            Column(Modifier.weight(1f)) { Text(d.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis); Text((if (d.owedByMe) "I owe · " else "") + d.reason, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             Column(horizontalAlignment = Alignment.End) { Text(money(d.remaining().toPlainString()), color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp); Text(if (d.settled) "Settled" else if (isOverdue) "Overdue · ${dateLabel(d.date)}" else "Due ${dateLabel(d.date)}", color = if (isOverdue) Color(0xFFB43E43) else Muted, fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Normal, fontSize = 11.sp) }
         }
         HorizontalDivider(color = Line)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(if (d.settled) "Marked settled" else nudgeLabel(d.lastNudged), color = Muted, fontSize = 11.sp, modifier = Modifier.weight(1f)); Pill(if (d.settled) "View details" else "Nudge ↗", Lavender, Violet, if (d.settled) onClick else onNudge) }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(if (d.settled) "Marked settled" else if (d.owedByMe) "Money you owe" else nudgeLabel(d.lastNudged), color = Muted, fontSize = 11.sp, modifier = Modifier.weight(1f)); Pill(if (d.settled || d.owedByMe) "View details" else "Nudge ↗", Lavender, Violet, if (d.settled || d.owedByMe) onClick else onNudge) }
     }
 }
 @Composable internal fun EmptyCard(title: String, subtitle: String) { Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(title, fontWeight = FontWeight.Bold, color = Ink); Text(subtitle, fontSize = 13.sp, color = Muted) } }

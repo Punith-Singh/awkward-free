@@ -49,6 +49,17 @@ class StoreTest {
         assertTrue(second.read().isEmpty())
         context.getSharedPreferences("awkward_free_user_account-a", 0).edit().clear().commit()
     }
+    @Test fun debtDirectionSurvivesBackupAndLegacyDefaultsToOwedToMe() {
+        val outgoing = Due(name = "Rahul", amount = "200.00", reason = "Lunch", date = "2026-11-24", owedByMe = true)
+        store.write(listOf(outgoing))
+        val exported = store.exportBackup()
+        store.write(emptyList())
+        assertTrue(store.restore(store.parseBackup(exported)))
+        assertTrue(store.read().single().owedByMe)
+
+        val legacy = """{"version":1,"dues":[{"id":"1","name":"Ananya","amount":"500.00","reason":"Dinner","date":"2026-11-24"}],"upi":"","displayName":""}"""
+        assertFalse(store.parseBackup(legacy).dues.single().owedByMe)
+    }
     @Test fun invalidBackupDoesNotOverwriteCurrentRecords() {
         val due = Due(name = "Ananya", amount = "500.00", reason = "Dinner", date = "2026-11-24")
         store.write(listOf(due))
