@@ -66,6 +66,7 @@ import java.time.LocalDate
                             phone = digits
                             contactMessage = "Contact added. Check the country code before saving."
                         } else {
+                            phone = ""
                             contactMessage = "Couldn't use this number. Enter a WhatsApp number with its country code."
                         }
                     }
