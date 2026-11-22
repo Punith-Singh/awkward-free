@@ -17,6 +17,7 @@ import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.punith.awkwardfree.MainActivity
+import com.punith.awkwardfree.R
 import com.punith.awkwardfree.data.Store
 import com.punith.awkwardfree.model.materializeMonthly
 import com.punith.awkwardfree.util.money
@@ -45,7 +46,7 @@ class DueReminderWorker(context: Context, params: WorkerParameters) : Worker(con
         if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel("due_reminders", "Due date reminders", NotificationManager.IMPORTANCE_DEFAULT))
         val intent = PendingIntent.getActivity(applicationContext, 0, Intent(applicationContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val builder = NotificationCompat.Builder(applicationContext, "due_reminders")
-            .setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("A little reminder")
+            .setSmallIcon(R.drawable.ic_notification).setContentTitle("A little reminder")
             .setContentText(if (count == 1) lines.first() else "You have $count tabs due soon or overdue. Open to review.")
             .setStyle(inbox).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setAutoCancel(true).setContentIntent(intent)
