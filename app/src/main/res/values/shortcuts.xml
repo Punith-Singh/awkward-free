@@ -1,0 +1,4 @@
+<resources>
+    <string name="shortcut_add_due">Add a due</string>
+    <string name="shortcut_add_due_long">Add a new due</string>
+</resources>
