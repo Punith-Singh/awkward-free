@@ -16,6 +16,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.core.content.ContextCompat
 import com.punith.awkwardfree.reminders.scheduleReminders
 import com.punith.awkwardfree.reminders.NotificationTarget
+import com.punith.awkwardfree.reminders.resolveNotificationTarget
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -95,14 +96,13 @@ import com.punith.awkwardfree.ui.theme.*
     LaunchedEffect(notificationTarget) {
         val target = notificationTarget
         if (target != null) {
-            val currentOwner = auth?.currentUser?.uid ?: ""
-            val due = dues.firstOrNull { it.id == target.dueId }
-            if (target.ownerId == currentOwner && due != null && !due.settled) {
+            val resolved = resolveNotificationTarget(target, auth?.currentUser?.uid ?: "", dues)
+            if (resolved != null) {
                 duplicateOf = null
                 editing = false
                 returnToNudge = false
-                selectedId = due.id
-                screen = if (target.openNudge && !due.owedByMe) "nudge" else "details"
+                selectedId = resolved.first
+                screen = resolved.second
             }
             onNotificationHandled()
         }
