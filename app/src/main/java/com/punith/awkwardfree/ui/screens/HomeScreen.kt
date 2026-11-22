@@ -33,6 +33,7 @@ import java.util.Locale
 }
 @Composable internal fun HomeScreen(dues: List<Due>, name: String, all: () -> Unit, settled: () -> Unit, add: () -> Unit, split: () -> Unit, details: (Due) -> Unit, nudge: (Due) -> Unit) {
     val open = dues.filterNot { it.settled }
+    val splitGroups = dues.filter { it.splitGroupId.isNotBlank() }.groupBy { it.splitGroupId }.values.toList()
     val today = LocalDate.now()
     fun dateOf(due: Due): LocalDate? = runCatching { LocalDate.parse(due.date) }.getOrNull()
     val overdue = open.filter { dateOf(it)?.isBefore(today) == true }
@@ -44,6 +45,17 @@ import java.util.Locale
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 22.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column { Text("GOOD TO SEE YOU", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(5.dp)); Text(if (name.isBlank()) "Hey there ✨" else "Hey, ${name.trim()} ✨", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold) }; Box(Modifier.size(40.dp).background(Violet, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) { Text(name.trim().take(1).uppercase().ifEmpty { "✦" }, color = Color.White, fontWeight = FontWeight.Bold) } } }
         item { BalanceCard(dues) }
+        if (splitGroups.isNotEmpty()) {
+            item { Text("Split expenses", color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp) }
+            items(splitGroups.take(3), key = { "split:" + it.first().splitGroupId }) { group ->
+                val trackedTotal = group.fold(BigDecimal.ZERO) { sum, due -> sum + (due.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) }
+                Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(group.first().reason, color = Ink, fontWeight = FontWeight.Bold)
+                    Text("${money(trackedTotal.toPlainString())} in friends’ shares · ${group.count { it.settled }} of ${group.size} settled", color = Muted)
+                    TextButton(onClick = all) { Text("View tabs") }
+                }
+            }
+        }
         if (open.isNotEmpty()) item {
             Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Coming up", color = Ink, fontWeight = FontWeight.Bold)
