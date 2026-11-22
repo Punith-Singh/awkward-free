@@ -12,7 +12,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.punith.awkwardfree.model.Due
-import com.punith.awkwardfree.model.splitEqually
+import com.punith.awkwardfree.model.splitShares
+import java.util.UUID
 import com.punith.awkwardfree.model.normalizePhone
 import java.util.Locale
 import com.punith.awkwardfree.ui.components.BackHeader
@@ -23,12 +24,15 @@ import com.punith.awkwardfree.util.money
 import java.math.BigDecimal
 import java.time.LocalDate
 
-private data class SplitPerson(val name: String = "", val phone: String = "")
+private data class SplitPerson(val name: String = "", val phone: String = "", val share: String = "")
 
 @Composable internal fun SplitDueScreen(back: () -> Unit, save: (List<Due>) -> Unit) {
     val context = LocalContext.current
     val people = remember { mutableStateListOf(SplitPerson(), SplitPerson()) }
     var amount by remember { mutableStateOf("") }
+    var mode by remember { mutableStateOf("Equal") }
+    var includeMe by remember { mutableStateOf(false) }
+    var myShare by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf(LocalDate.now()) }
     var error by remember { mutableStateOf("") }
@@ -36,13 +40,24 @@ private data class SplitPerson(val name: String = "", val phone: String = "")
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         BackHeader("Split expense", back)
-        Heading("SPLIT EQUALLY", "Split with friends.", "Enter the amount your friends owe in total. Your own share should already be excluded.")
-        OutlinedTextField(value = amount, onValueChange = { amount = it; error = "" }, label = { Text("Total to collect (₹)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
+        Heading("SPLIT EXPENSE", "Split with friends.", "Choose how to divide the bill. Only your friends’ shares become tabs.")
+        OutlinedTextField(value = amount, onValueChange = { amount = it; error = "" }, label = { Text("Bill total (₹)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Equal", "Amount", "Percent").forEach { option ->
+                FilterChip(selected = mode == option, onClick = { mode = option; error = "" }, label = { Text(option) })
+            }
+        }
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Checkbox(checked = includeMe, onCheckedChange = { includeMe = it; error = "" })
+            Text("Include my share")
+        }
+        if (includeMe && mode != "Equal") OutlinedTextField(value = myShare, onValueChange = { myShare = it; error = "" }, label = { Text(if (mode == "Percent") "My share (%)" else "My share (₹)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
         people.forEachIndexed { index, person ->
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Friend ${index + 1}", style = MaterialTheme.typography.titleSmall)
                 OutlinedTextField(value = person.name, onValueChange = { people[index] = person.copy(name = it); error = "" }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = person.phone, onValueChange = { people[index] = person.copy(phone = it); error = "" }, label = { Text("WhatsApp number (optional)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (mode != "Equal") OutlinedTextField(value = person.share, onValueChange = { people[index] = person.copy(share = it); error = "" }, label = { Text(if (mode == "Percent") "Share (%)" else "Share (₹)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
                 if (people.size > 2) TextButton(onClick = { people.removeAt(index) }) { Text("Remove friend") }
             }
         }
@@ -66,9 +81,15 @@ private data class SplitPerson(val name: String = "", val phone: String = "")
                 else -> ""
             }
             if (error.isEmpty() && total != null) {
-                val shares = runCatching { splitEqually(total, participants.size) }.getOrNull()
-                if (shares == null) error = "The amount must cover at least one paisa per friend."
-                else preview = participants.zip(shares).map { (person, share) -> Due(name = person.name, phone = normalizePhone(person.phone) ?: "", amount = share.toPlainString(), reason = reason.trim(), date = dueDate.toString()) }
+                val inputs = (if (includeMe) listOf(myShare) else emptyList()) + participants.map { it.share }
+                val result = runCatching { splitShares(total, mode, inputs) }
+                val shares = result.getOrNull()
+                if (shares == null) error = result.exceptionOrNull()?.message ?: "Check the shares and total."
+                else {
+                    val groupId = UUID.randomUUID().toString()
+                    val friendShares = if (includeMe) shares.drop(1) else shares
+                    preview = participants.zip(friendShares).map { (person, share) -> Due(name = person.name, phone = normalizePhone(person.phone) ?: "", amount = share.toPlainString(), reason = reason.trim(), date = dueDate.toString(), splitGroupId = groupId) }
+                }
             }
         })
     }
