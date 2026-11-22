@@ -139,7 +139,7 @@ import java.time.LocalDate
             }
             Switch(checked = repeatMonthly, onCheckedChange = { repeatMonthly = it })
         }
-        Input(phone, { phone = it }, "WhatsApp number (optional)", "919876543210", KeyboardType.Phone)
+        Input(phone, { phone = it }, "WhatsApp number (optional)", "98765 43210", KeyboardType.Phone)
         Text("Indian mobile numbers default to +91. Include the country code for other numbers.", color = Muted, fontSize = 12.sp)
         if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
         PrimaryButton(if (existing == null || duplicating) "Save this tab" else "Save changes", {
