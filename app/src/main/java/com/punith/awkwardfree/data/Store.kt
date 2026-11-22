@@ -53,7 +53,7 @@ internal class Store(context: Context, userId: String? = null) {
         require(historyJson.length() <= 100) { "Too much reminder history." }
         val history = (0 until historyJson.length()).map { historyJson.getLong(it).also { timestamp -> require(timestamp > 0) } }
         val recurrenceThrough = o.optString("recurrenceThrough", "")
-        if (recurrenceThrough.isNotEmpty()) LocalDate.parse(recurrenceThrough)
+        if (recurrenceThrough.isNotEmpty()) require(!LocalDate.parse(recurrenceThrough).isBefore(LocalDate.parse(date))) { "Invalid recurring cursor." }
         Due(id, name, amount.toPlainString(), reason, date, phone, o.optBoolean("settled"), o.optLong("lastNudged"), paid.toPlainString(), o.optBoolean("owedByMe", false), history, o.optBoolean("repeatMonthly", false), recurrenceThrough)
     } }
 }
