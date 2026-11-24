@@ -135,7 +135,7 @@ internal fun SettingsScreen(
             }
         }
         Text(
-            "A backup contains names, phone numbers, dues and your UPI ID. Keep the file somewhere private. Only saved settings are included.",
+            "Manual backup files contain names, phone numbers, dues and your UPI ID. Keep them private. Android backup is automatic only when enabled and may be delayed.",
             color = Muted, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(start = 4.dp)
         )
 
@@ -144,7 +144,7 @@ internal fun SettingsScreen(
             SettingsRow(
                 icon = Icons.Outlined.Lock,
                 title = "Your data, your control",
-                subtitle = "Dues are stored only on this device. Confirm payments yourself before marking them settled."
+                subtitle = "Dues are stored on this device. Android may back up app data when encrypted device backup is enabled. Confirm payments yourself."
             )
             if (version.isNotBlank()) {
                 RowDivider()
