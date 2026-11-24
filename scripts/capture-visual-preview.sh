@@ -10,7 +10,6 @@ adb shell am force-stop "$package_name"
 adb shell am start -n "$package_name/.MainActivity" >/dev/null
 sleep 6
 mkdir -p visual-preview
-adb exec-out screencap -p > visual-preview/dues.png
 python3 - <<'PY'
 import re
 import subprocess
@@ -35,6 +34,15 @@ def select(description, output):
     time.sleep(2)
     with open(output, "wb") as file:
         file.write(run("adb", "exec-out", "screencap", "-p"))
+
+for attempt in range(15):
+    try:
+        select("Dues", "visual-preview/dues.png")
+        break
+    except (RuntimeError, subprocess.CalledProcessError, ET.ParseError):
+        if attempt == 14:
+            raise
+        time.sleep(2)
 
 select("Friends", "visual-preview/friends.png")
 select("Settings", "visual-preview/settings.png")
