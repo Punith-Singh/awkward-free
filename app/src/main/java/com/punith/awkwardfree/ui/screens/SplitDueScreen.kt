@@ -101,7 +101,7 @@ private data class SplitPerson(val name: String = "", val phone: String = "", va
                     Text("This friend paid")
                 }
                 if (mode != "Equal") OutlinedTextField(value = person.share, onValueChange = { people[index] = person.copy(share = it); error = "" }, label = { Text(if (mode == "Percent") "Share (%)" else "Share (₹)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
-                if (people.size > 2) TextButton(onClick = { people.removeAt(index); payerIndex = 0 }) { Text("Remove friend") }
+                if (people.size > if (includeMe) 1 else 2) TextButton(onClick = { people.removeAt(index); payerIndex = 0 }) { Text("Remove friend") }
             }
         }
         Text("Indian mobile numbers default to +91. Add a country code for other numbers.", style = MaterialTheme.typography.bodySmall)
@@ -115,7 +115,7 @@ private data class SplitPerson(val name: String = "", val phone: String = "", va
             val participants = people.map { it.copy(name = it.name.trim()) }
             val total = amount.toBigDecimalOrNull()
             error = when {
-                participants.size !in 2..50 -> "Enter between 2 and 50 friends."
+                participants.size !in (if (includeMe) 1 else 2)..50 -> "Add at least one friend and include your share, or add two friends."
                 participants.any { it.name.isBlank() || it.name.length > 500 } -> "Enter a valid name for each friend."
                 participants.map { it.name.lowercase(Locale.ROOT) to (normalizePhone(it.phone) ?: "") }.toSet().size != participants.size -> "Each friend must have a distinct name and number."
                 participants.any { it.phone.isNotBlank() && normalizePhone(it.phone) == null } -> "Enter a valid phone number for each friend, or leave it blank."
