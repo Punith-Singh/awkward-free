@@ -15,16 +15,18 @@ internal class Store(context: Context, userId: String? = null) {
     private val prefsName = if (userId == null) "awkward_free" else "awkward_free_user_$userId"
     private val prefs = context.getSharedPreferences(prefsName, 0)
     private val mirror = AutoBackupMirror(appContext)
+    var automaticSnapshotHealthy: Boolean = true
+        private set
 
     init {
         mirror.restoreIfAbsent(prefsName, prefs, ::parseBackup)
-        if (prefs.all.isNotEmpty()) mirror.snapshot(prefsName, prefs, ::parseBackup)
+        if (prefs.all.isNotEmpty()) automaticSnapshotHealthy = mirror.snapshot(prefsName, prefs, ::parseBackup)
         val migrated = java.io.File(appContext.noBackupFilesDir, "app_backup_migrated")
         if (!migrated.exists() && mirror.snapshotExistingAccounts(::parseBackup)) {
             runCatching { migrated.writeText("1") }
         }
     }
-    private fun snapshotForBackup() { mirror.snapshot(prefsName, prefs, ::parseBackup) }
+    private fun snapshotForBackup() { automaticSnapshotHealthy = mirror.snapshot(prefsName, prefs, ::parseBackup) }
     var upi: String
         get() = prefs.getString("upi", "") ?: ""
         set(value) { prefs.edit().putString("upi", value).apply(); snapshotForBackup() }
