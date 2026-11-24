@@ -27,7 +27,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 
 private val UpiPattern = Regex("[A-Za-z0-9._-]+@[A-Za-z0-9._-]+")
-private val SoftLavender = Color(0xFFD2C9FF)
+private val SoftLavender = Color(0xFFCDE3D5)
 
 @Composable
 internal fun SettingsScreen(
@@ -64,7 +64,7 @@ internal fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         BackHeader("Settings", back)
-        Heading("Make it yours", "Your settings.", "Payment details, reminders and your data, all in one place.")
+        Heading("YOUR SPACE", "Make it yours.", "Payment details, reminders and your data in one place.")
 
         ProfileCard(trimmedName, accountEmail, openAccount)
 
