@@ -1,6 +1,8 @@
 package com.punith.awkwardfree.ui.theme
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,12 +31,14 @@ internal fun appTypography(): Typography {
         labelLarge = t.labelLarge.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), labelMedium = t.labelMedium.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), labelSmall = t.labelSmall.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified)
     )
 }
-internal val Background = Color(0xFFF5F4FB)
-internal val Ink = Color(0xFF18152E)
-internal val Muted = Color(0xFF78768D)
-internal val Violet = Color(0xFF674FE8)
-internal val Deep = Color(0xFF241D50)
-internal val Lavender = Color(0xFFE9E4FF)
-internal val Lime = Color(0xFFC9F27A)
-internal val Line = Color(0xFFEBEAF2)
-internal val Peach = Color(0xFFFFE5D9)
+internal fun appShapes() = Shapes(extraSmall = RoundedCornerShape(14.dp), small = RoundedCornerShape(16.dp), medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(24.dp), extraLarge = RoundedCornerShape(28.dp))
+
+internal val Background = Color(0xFFF6F8F4)
+internal val Ink = Color(0xFF172A23)
+internal val Muted = Color(0xFF65756D)
+internal val Violet = Color(0xFF24775B)
+internal val Deep = Color(0xFF173D30)
+internal val Lavender = Color(0xFFE3F1E8)
+internal val Lime = Color(0xFFCDF08B)
+internal val Line = Color(0xFFE4EBE5)
+internal val Peach = Color(0xFFFBE8D8)

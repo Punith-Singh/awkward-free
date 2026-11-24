@@ -45,16 +45,21 @@ import java.util.Locale
     val splits = dues.filter { it.splitGroupId.isNotBlank() }.groupBy { it.splitGroupId }.values.filter { group -> group.any { !it.settled } }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { Text("Friends", color = Ink, fontSize = 29.sp, fontWeight = FontWeight.ExtraBold) }
-        item { Text("Everything per person, in one place.", color = Muted, style = MaterialTheme.typography.bodyMedium) }
-        if (groups.isEmpty()) item { EmptyCard("No open tabs yet", "Friends with open tabs will appear here.") }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("YOUR PEOPLE", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+                Text("Friends", color = Ink, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+                Text("All your tabs together, person by person.", color = Muted, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        if (groups.isEmpty()) item { EmptyCard("Your people, all in one place", "Add a tab and your friends’ balances will appear here.") }
         items(groups, key = { it.first().id }) { group ->
             val first = group.first()
             val incoming = group.filterNot { it.owedByMe }
             val receivable = incoming.fold(BigDecimal.ZERO) { sum, due -> sum + due.remaining() }
             val payable = group.filter { it.owedByMe }.fold(BigDecimal.ZERO) { sum, due -> sum + due.remaining() }
             val net = receivable - payable
-            Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(22.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(24.dp)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Avatar(first.name)
                     Column(Modifier.weight(1f)) {

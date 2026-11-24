@@ -47,7 +47,7 @@ internal fun SettlementCelebration(name: String, onDismiss: () -> Unit) {
             ) {
                 Canvas(
                     Modifier.fillMaxWidth().height(210.dp)
-                        .background(Color(0xFFF4F1FF), RoundedCornerShape(22.dp))
+                        .background(Color(0xFFF0F7F0), RoundedCornerShape(22.dp))
                         .semantics { contentDescription = "Coins and a receipt move into a wallet" }
                 ) {
                     val w = size.width
@@ -80,9 +80,9 @@ internal fun SettlementCelebration(name: String, onDismiss: () -> Unit) {
                     val left = w * .33f
                     val top = h * .62f
                     val walletSize = Size(w * .34f, h * .20f)
-                    drawRoundRect(Color(0xFF352B74), Offset(left, top), walletSize, CornerRadius(14.dp.toPx()))
+                    drawRoundRect(Color(0xFF163D30), Offset(left, top), walletSize, CornerRadius(14.dp.toPx()))
                     drawRoundRect(Violet, Offset(left, top + h * .035f), walletSize.copy(height = h * .17f), CornerRadius(12.dp.toPx()))
-                    drawRoundRect(Color(0xFF5140B5), Offset(w * .53f, top + h * .075f), Size(w * .14f, h * .065f), CornerRadius(6.dp.toPx()))
+                    drawRoundRect(Color(0xFF28604B), Offset(w * .53f, top + h * .075f), Size(w * .14f, h * .065f), CornerRadius(6.dp.toPx()))
                     drawCircle(Lime, 3.dp.toPx(), Offset(w * .59f, top + h * .107f))
                 }
                 Text("All settled!", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = Ink, textAlign = TextAlign.Center)

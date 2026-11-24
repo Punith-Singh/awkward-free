@@ -138,12 +138,14 @@ import com.punith.awkwardfree.ui.theme.*
         }
     }
     BackHandler(enabled = screen != "home") { back() }
-    Scaffold(containerColor = Background, snackbarHost = { SnackbarHost(snackbarHost) }, bottomBar = { BottomBar(if (screen == "details" || screen == "nudge") detailOrigin else screen) { navigate(it) } }, floatingActionButton = {
-        if (screen == "home" || screen == "friends") FloatingActionButton(onClick = { addOrigin = screen; navigate("add") }, containerColor = Lime, contentColor = Deep) { Icon(Icons.Outlined.Add, contentDescription = "Add a due") }
+    Scaffold(containerColor = Background, snackbarHost = { SnackbarHost(snackbarHost) }, bottomBar = {
+        BottomBar(if (screen == "details" || screen == "nudge") detailOrigin else screen,
+            onSelect = { navigate(it) },
+            onAdd = { addOrigin = if (screen == "friends" || screen == "friendDetails" || screen == "splitGroup") "friends" else "home"; navigate("add") })
     }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (if (screen == "details" || screen == "nudge") detailOrigin else screen) {
-                "home" -> DuesDashboard(dues, { navigate("friends") }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "nudge" })
+                "home" -> DuesDashboard(dues, { navigate("friends") }, { addOrigin = "home"; navigate("add") }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "nudge" })
                 "friends" -> FriendsScreen(dues, upi, { d -> friendReferenceId = d.id; screen = "friendDetails" }, { d -> detailOrigin = "friends"; selectedId = d.id; screen = "nudge" }, { id -> splitGroupId = id; screen = "splitGroup" }, { reference -> updateWithUndo(offsetFriendTabs(reference, dues), "Tabs offset") }, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) })
                 "friendDetails" -> {
                     val reference = dues.firstOrNull { it.id == friendReferenceId }
@@ -184,28 +186,24 @@ import com.punith.awkwardfree.ui.theme.*
     }
     pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = materializeMonthly(backup.dues, java.time.LocalDate.now()); store.write(dues); upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }
 }
-@Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit) {
-    val active = when (screen) { "friends", "friendDetails", "splitGroup" -> "friends"; "settings", "account" -> "settings"; else -> "home" }
-    val options = listOf(Triple("home", "Dues", Icons.Outlined.ListAlt), Triple("friends", "Friends", Icons.Outlined.People), Triple("settings", "Settings", Icons.Outlined.Settings))
-    val shape = RoundedCornerShape(28.dp)
-    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 12.dp, top = 6.dp), contentAlignment = Alignment.Center) {
-        Row(
-            Modifier.fillMaxWidth().shadow(12.dp, shape, ambientColor = Violet.copy(alpha = 0.18f), spotColor = Violet.copy(alpha = 0.18f))
-                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.94f), Color(0xFFECE7FF).copy(alpha = 0.88f))), shape)
-                .border(1.dp, Color.White.copy(alpha = 0.9f), shape).height(68.dp).padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically
-        ) {
-            options.forEach { (key, label, icon) ->
-                val selected = active == key
-                val indicatorColor by animateColorAsState(if (selected) Violet.copy(alpha = 0.13f) else Color.Transparent, label = "navigation selection")
-                val iconColor by animateColorAsState(if (selected) Violet else Color(0xFF79748F), label = "navigation icon")
-                val iconScale by animateFloatAsState(if (selected) 1.08f else 1f, animationSpec = spring(), label = "navigation icon scale")
-                IconButton(onClick = { onSelect(key) }, modifier = Modifier.semantics { this.selected = selected }) {
-                    Box(Modifier.size(44.dp).background(indicatorColor, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) { Icon(icon, contentDescription = label, tint = iconColor, modifier = Modifier.size(20.dp).scale(iconScale)); Text(label, color = iconColor, style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                    }
-                }
-            }
+@Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit, onAdd: () -> Unit) {
+    val active = when (screen) {
+        "friends", "friendDetails", "splitGroup" -> "friends"
+        "settings", "account" -> "settings"
+        "add", "split" -> "add"
+        else -> "home"
+    }
+    val colors = NavigationBarItemDefaults.colors(
+        selectedIconColor = Violet, unselectedIconColor = Muted,
+        indicatorColor = Lavender
+    )
+    Column(Modifier.fillMaxWidth().background(Color.White)) {
+        HorizontalDivider(color = Line)
+        NavigationBar(containerColor = Color.White, contentColor = Ink, tonalElevation = 0.dp) {
+            NavigationBarItem(selected = active == "home", onClick = { onSelect("home") }, icon = { Icon(Icons.Outlined.Home, contentDescription = "Dues") }, colors = colors)
+            NavigationBarItem(selected = active == "friends", onClick = { onSelect("friends") }, icon = { Icon(Icons.Outlined.People, contentDescription = "Friends") }, colors = colors)
+            NavigationBarItem(selected = active == "add", onClick = onAdd, icon = { Icon(Icons.Outlined.AddBox, contentDescription = "Add a due") }, colors = colors)
+            NavigationBarItem(selected = active == "settings", onClick = { onSelect("settings") }, icon = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") }, colors = colors)
         }
     }
 }

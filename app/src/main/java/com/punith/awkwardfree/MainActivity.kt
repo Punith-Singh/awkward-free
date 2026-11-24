@@ -45,11 +45,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleShortcut(intent)
-        window.statusBarColor = android.graphics.Color.rgb(245, 244, 251)
+        window.statusBarColor = android.graphics.Color.rgb(246, 248, 244)
         window.navigationBarColor = android.graphics.Color.WHITE
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-        setContent { MaterialTheme(colorScheme = lightColorScheme(primary = Violet, onPrimary = Color.White, surface = Color.White, background = Background, onSurface = Ink), typography = appTypography()) {
+        setContent { MaterialTheme(colorScheme = lightColorScheme(primary = Violet, onPrimary = Color.White, primaryContainer = Lavender, onPrimaryContainer = Ink, secondary = Violet, secondaryContainer = Lavender, onSecondaryContainer = Ink, surface = Color.White, background = Background, onSurface = Ink, onBackground = Ink, outline = Line), typography = appTypography(), shapes = appShapes()) {
             val auth = remember { if (FirebaseApp.getApps(this).isEmpty()) null else FirebaseAuth.getInstance() }
             var user by remember { mutableStateOf(auth?.currentUser) }
             DisposableEffect(auth) {
