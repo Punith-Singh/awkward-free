@@ -23,7 +23,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.*
 
-@Composable internal fun DetailScreen(d: Due, back: () -> Unit, edit: () -> Unit, nudge: () -> Unit, toggle: () -> Unit, delete: () -> Unit, recordPayment: (BigDecimal) -> Unit, duplicate: () -> Unit) {
+@Composable internal fun DetailScreen(d: Due, back: () -> Unit, edit: () -> Unit, nudge: () -> Unit, toggle: () -> Unit, delete: () -> Unit, recordPayment: (BigDecimal) -> Unit, duplicate: () -> Unit, remindersEnabled: Boolean, snooze: () -> Unit) {
     var showCelebration by remember(d.id) { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var showPayment by remember { mutableStateOf(false) }
@@ -59,6 +59,9 @@ import com.punith.awkwardfree.util.*
             }
         }
         if (!d.settled && !d.owedByMe) PrimaryButton("Send a nudge", nudge)
+        if (!d.settled && !d.owedByMe && d.lastNudged > 0 && remindersEnabled) {
+            OutlinedButton(onClick = snooze, modifier = Modifier.fillMaxWidth()) { Text("Snooze follow-up for 3 days") }
+        }
         if (!d.settled) OutlinedButton(onClick = { showPayment = true }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp)) { Text("Record a payment", fontWeight = FontWeight.Bold) }
         OutlinedButton(onClick = { if (d.settled && d.remaining().signum() == 0) confirmReset = true else { val wasOpen = !d.settled; toggle(); if (wasOpen) showCelebration = true } }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White, contentColor = Ink), border = null) { Text(if (d.settled) "Reopen tab" else "✓   Mark as settled", fontWeight = FontWeight.Bold) }
         OutlinedButton(onClick = duplicate, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(17.dp)) { Text("Duplicate this tab", fontWeight = FontWeight.Bold) }

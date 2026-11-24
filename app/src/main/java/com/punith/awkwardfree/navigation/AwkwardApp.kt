@@ -15,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.core.content.ContextCompat
 import com.punith.awkwardfree.reminders.scheduleReminders
+import com.punith.awkwardfree.reminders.scheduleFollowUp
 import com.punith.awkwardfree.reminders.NotificationTarget
 import com.punith.awkwardfree.reminders.resolveNotificationTarget
 import com.google.firebase.auth.FirebaseAuth
@@ -79,6 +80,7 @@ import com.punith.awkwardfree.ui.theme.*
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     var reminderEnabled by remember { mutableStateOf(store.remindersEnabled) }
+    var quietHoursEnabled by remember { mutableStateOf(store.quietHoursEnabled) }
     var backupStatus by remember { mutableStateOf("") }
     var pendingBackup by remember { mutableStateOf<Backup?>(null) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -159,21 +161,24 @@ import com.punith.awkwardfree.ui.theme.*
                 "settings" -> SettingsScreen(upi, name, reminderEnabled, backupStatus, accountEmail, { screen = "account" }, { back() }, { enabled ->
                     if (enabled && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     else { reminderEnabled = enabled; store.remindersEnabled = enabled; scheduleReminders(context, enabled); backupStatus = if (enabled) "Daily reminders enabled." else "Reminders turned off." }
-                }, { exportLauncher.launch("awkward-free-backup.json") }, { importLauncher.launch(arrayOf("application/json", "text/plain")) }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
+                }, { exportLauncher.launch("awkward-free-backup.json") }, { importLauncher.launch(arrayOf("application/json", "text/plain")) }, quietHoursEnabled, { enabled -> quietHoursEnabled = enabled; store.quietHoursEnabled = enabled }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
             }
         }
     }
     if (screen == "details") {
         ModalBottomSheet(onDismissRequest = { back() }) {
             Box(Modifier.fillMaxWidth()) {
-            if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { val items = dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }; if (!selected.settled) updateWithUndo(items, "Tab settled") else update(items) }, { updateWithUndo(dues.filterNot { it.id == selected.id }, "Tab deleted"); selectedId = null; screen = "home" }, { payment -> val items = dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }; if (payment.compareTo(selected.remaining()) == 0) updateWithUndo(items, "Tab settled") else update(items) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00", repeatMonthly = false, recurrenceThrough = "", splitGroupId = ""); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
+            if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { val items = dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }; if (!selected.settled) updateWithUndo(items, "Tab settled") else update(items) }, { updateWithUndo(dues.filterNot { it.id == selected.id }, "Tab deleted"); selectedId = null; screen = "home" }, { payment -> val items = dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }; if (payment.compareTo(selected.remaining()) == 0) updateWithUndo(items, "Tab settled") else update(items) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00", repeatMonthly = false, recurrenceThrough = "", splitGroupId = ""); editing = false; screen = "add" }, reminderEnabled, {
+                scheduleFollowUp(context, auth?.currentUser?.uid ?: "", selected.id, selected.lastNudged)
+                scope.launch { snackbarHost.showSnackbar("Follow-up snoozed for 3 days") }
+            }) else EmptyFallback { screen = "home" }
             SnackbarHost(snackbarHost, Modifier.align(Alignment.BottomCenter).padding(12.dp))
             }
         }
     }
     if (screen == "nudge") {
         ModalBottomSheet(onDismissRequest = { back() }) {
-            if (selected != null && !selected.owedByMe) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.recordNudgeOpened(System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
+            if (selected != null && !selected.owedByMe) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }, reminderEnabled) { followUp -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id == selected.id) it.recordNudgeOpened(opened) else it }); if (followUp) scheduleFollowUp(context, auth?.currentUser?.uid ?: "", selected.id, opened); screen = "details" } else EmptyFallback { screen = "home" }
         }
     }
     pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = materializeMonthly(backup.dues, java.time.LocalDate.now()); store.write(dues); upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }

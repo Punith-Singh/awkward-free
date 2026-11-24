@@ -22,6 +22,9 @@ internal class Store(context: Context, userId: String? = null) {
     var remindersEnabled: Boolean
         get() = prefs.getBoolean("reminders_enabled", false)
         set(value) { prefs.edit().putBoolean("reminders_enabled", value).apply() }
+    var quietHoursEnabled: Boolean
+        get() = prefs.getBoolean("quiet_hours", true)
+        set(value) { prefs.edit().putBoolean("quiet_hours", value).apply() }
     fun read(): List<Due> = try { parseDues(JSONArray(prefs.getString("dues", "[]"))) } catch (_: Exception) { emptyList() }
     fun write(dues: List<Due>) { prefs.edit().putString("dues", encodeDues(dues).toString()).apply(); updateBalanceWidgets(appContext) }
     fun exportBackup(): String = JSONObject().put("version", 5).put("dues", encodeDues(read()))

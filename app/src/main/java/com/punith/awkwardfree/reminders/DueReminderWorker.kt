@@ -34,6 +34,8 @@ class DueReminderWorker(context: Context, params: WorkerParameters) : Worker(con
         val store = Store(applicationContext, uid)
         if (!store.remindersEnabled) return Result.success()
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return Result.success()
+        val now = ZonedDateTime.now()
+        if (outsideQuietHours(now, store.quietHoursEnabled).isAfter(now)) return Result.retry()
         val today = LocalDate.now()
         val upcoming = materializeMonthly(store.read(), today).filter { !it.settled && try { !LocalDate.parse(it.date).isAfter(today.plusDays(1)) } catch (_: Exception) { false } }.sortedBy { it.date }
         val count = upcoming.size
