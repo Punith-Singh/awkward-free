@@ -52,6 +52,9 @@ import com.punith.awkwardfree.ui.theme.*
     var upi by remember { mutableStateOf(store.upi) }
     var name by remember { mutableStateOf(store.displayName) }
     var screen by remember { mutableStateOf("home") }
+    var detailOrigin by remember { mutableStateOf("home") }
+    var addOrigin by remember { mutableStateOf("home") }
+    var friendReferenceId by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var splitGroupId by remember { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf(false) }
@@ -87,7 +90,7 @@ import com.punith.awkwardfree.ui.theme.*
     val selected = dues.firstOrNull { it.id == selectedId }
     fun update(items: List<Due>) { val current = materializeMonthly(items, java.time.LocalDate.now()); dues = current; store.write(current) }
     fun navigate(target: String) { splitGroupId = null; duplicateOf = null; editing = false; returnToNudge = false; screen = target }
-    fun back() { screen = when (screen) { "details" -> if (splitGroupId != null) "splitGroup" else if (selected?.settled == true) "settled" else "dues"; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else "home"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; duplicateOf = null; editing = false; returnToNudge = false }
+    fun back() { screen = when (screen) { "details" -> detailOrigin; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else addOrigin; "split" -> "add"; "friendDetails" -> "friends"; "splitGroup" -> "friends"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; duplicateOf = null; editing = false; returnToNudge = false }
     LaunchedEffect(quickAddPending) {
         if (quickAddPending) {
             navigate("add")
@@ -103,21 +106,33 @@ import com.punith.awkwardfree.ui.theme.*
                 editing = false
                 returnToNudge = false
                 selectedId = resolved.first
+                detailOrigin = "home"
                 screen = resolved.second
             }
             onNotificationHandled()
         }
     }
     BackHandler(enabled = screen != "home") { back() }
-    Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }) { padding ->
+    Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }, floatingActionButton = {
+        if (screen == "home" || screen == "friends") FloatingActionButton(onClick = { addOrigin = screen; navigate("add") }, containerColor = Lime, contentColor = Deep) { Icon(Icons.Outlined.Add, contentDescription = "Add a due") }
+    }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (screen) {
-                "home" -> HomeScreen(dues, name, { navigate("dues") }, { navigate("settled") }, { navigate("add") }, { navigate("split") }, { id -> splitGroupId = id; screen = "splitGroup" }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
-                "split" -> SplitDueScreen(dues, { back() }) { entries -> update(entries + dues); navigate("dues") }
-                "splitGroup" -> SplitGroupScreen(dues.filter { it.splitGroupId == splitGroupId }, { splitGroupId = null; screen = "home" }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" })
+                "home" -> DuesDashboard(dues, { navigate("friends") }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "nudge" })
+                "friends" -> FriendsScreen(dues, upi, { d -> friendReferenceId = d.id; screen = "friendDetails" }, { d -> detailOrigin = "friends"; selectedId = d.id; screen = "nudge" }, { id -> splitGroupId = id; screen = "splitGroup" }, { reference -> update(offsetFriendTabs(reference, dues)) }, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) })
+                "friendDetails" -> {
+                    val reference = dues.firstOrNull { it.id == friendReferenceId }
+                    val number = reference?.let { normalizePhone(it.phone) }
+                    val friendDues = if (reference == null) emptyList() else dues.filter { due ->
+                        !due.settled && if (number == null) due.id == reference.id else normalizePhone(due.phone) == number && due.name.trim().equals(reference.name.trim(), ignoreCase = true)
+                    }
+                    ListScreen("Friend’s tabs", "Open tabs for this friend.", friendDues, false, { screen = "friends" }, { d -> detailOrigin = "friendDetails"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "friendDetails"; selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) }, { d -> update(offsetFriendTabs(d, dues)) })
+                }
+                "split" -> SplitDueScreen(dues, { back() }) { entries -> update(entries + dues); navigate("home") }
+                "splitGroup" -> SplitGroupScreen(dues.filter { it.splitGroupId == splitGroupId }, { splitGroupId = null; screen = "friends" }, { d -> detailOrigin = "splitGroup"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "splitGroup"; selectedId = d.id; screen = "nudge" })
                 "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) }, { reference -> update(offsetFriendTabs(reference, dues)) })
                 "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
-                "add" -> AddScreen(if (editing) selected else duplicateOf, { back() }, duplicateOf != null) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; editing = false; duplicateOf = null; screen = "details" }
+                "add" -> AddScreen(if (editing) selected else duplicateOf, { back() }, duplicateOf != null, { screen = "split" }) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; if (!editing) detailOrigin = addOrigin; editing = false; duplicateOf = null; screen = "details" }
                 "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00", repeatMonthly = false, recurrenceThrough = "", splitGroupId = ""); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
                 "nudge" -> if (selected != null && !selected.owedByMe) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.recordNudgeOpened(System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
                 "account" -> AccountScreen(auth, accountEmail) { screen = "settings" }
@@ -131,8 +146,8 @@ import com.punith.awkwardfree.ui.theme.*
     pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = materializeMonthly(backup.dues, java.time.LocalDate.now()); store.write(dues); upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }
 }
 @Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit) {
-    val active = when (screen) { "details", "nudge" -> "dues"; "split" -> "add"; else -> screen }
-    val options = listOf(Triple("home", "Home", Icons.Outlined.Home), Triple("dues", "All dues", Icons.Outlined.ListAlt), Triple("add", "Add a due", Icons.Outlined.AddBox), Triple("settled", "Settled", Icons.Outlined.CheckCircle), Triple("settings", "Settings", Icons.Outlined.AccountCircle))
+    val active = when (screen) { "friends", "friendDetails", "splitGroup" -> "friends"; "settings", "account" -> "settings"; else -> "home" }
+    val options = listOf(Triple("home", "Dues", Icons.Outlined.ListAlt), Triple("friends", "Friends", Icons.Outlined.People), Triple("settings", "Settings", Icons.Outlined.Settings))
     val shape = RoundedCornerShape(28.dp)
     Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, bottom = 12.dp, top = 6.dp), contentAlignment = Alignment.Center) {
         Row(
@@ -148,7 +163,7 @@ import com.punith.awkwardfree.ui.theme.*
                 val iconScale by animateFloatAsState(if (selected) 1.08f else 1f, animationSpec = spring(), label = "navigation icon scale")
                 IconButton(onClick = { onSelect(key) }, modifier = Modifier.semantics { this.selected = selected }) {
                     Box(Modifier.size(44.dp).background(indicatorColor, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
-                        Icon(icon, contentDescription = label, tint = iconColor, modifier = Modifier.size(24.dp).scale(iconScale))
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) { Icon(icon, contentDescription = label, tint = iconColor, modifier = Modifier.size(20.dp).scale(iconScale)); Text(label, color = iconColor, style = MaterialTheme.typography.labelSmall, maxLines = 1) }
                     }
                 }
             }
