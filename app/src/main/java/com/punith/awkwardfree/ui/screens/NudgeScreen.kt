@@ -24,10 +24,13 @@ import com.punith.awkwardfree.model.*
 import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.util.*
+import com.punith.awkwardfree.reminders.suggestedFollowUpTone
 
-@Composable internal fun NudgeScreen(d: Due, upi: String, back: () -> Unit, settings: () -> Unit, onOpened: () -> Unit) {
+@Composable internal fun NudgeScreen(d: Due, upi: String, back: () -> Unit, settings: () -> Unit, remindersEnabled: Boolean, onOpened: (Boolean) -> Unit) {
     val context = LocalContext.current
-    var tone by remember(d.id, upi) { mutableStateOf(if (d.lastNudged > 0) "Follow-up" else "Friendly") }; var text by remember(d.id, upi) { mutableStateOf(message(d, upi, if (d.lastNudged > 0) "Follow-up" else "Friendly")) }; var error by remember { mutableStateOf("") }; var confirmTone by remember { mutableStateOf<String?>(null) }
+    val suggestedTone = suggestedFollowUpTone(if (d.nudgeHistory.isEmpty() && d.lastNudged > 0) 1 else d.nudgeHistory.size)
+    var followUp by remember(d.id) { mutableStateOf(false) }
+    var tone by remember(d.id, upi) { mutableStateOf(suggestedTone) }; var text by remember(d.id, upi) { mutableStateOf(message(d, upi, suggestedTone)) }; var error by remember { mutableStateOf("") }; var confirmTone by remember { mutableStateOf<String?>(null) }
     fun chooseTone(option: String) { tone = option; text = message(d, upi, option) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         BackHeader("Almost there", back)
@@ -41,7 +44,14 @@ import com.punith.awkwardfree.util.*
             BasicTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp), textStyle = TextStyle(fontFamily = Jakarta, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, color = Ink))
             if (upi.isNotBlank()) Column(Modifier.fillMaxWidth().background(Color(0xFFF4F0FF), RoundedCornerShape(14.dp)).padding(12.dp)) { Text("PAYMENT LINK INCLUDED", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text(upi, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold) } else TextButton(onClick = settings) { Text("Add UPI ID for a payment link") }
         }
-        Text("You’ll review and send it yourself in WhatsApp.", color = Muted, fontSize = 12.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = followUp, onCheckedChange = { followUp = it }, enabled = remindersEnabled)
+            Column {
+                Text("Remind me to follow up in 3 days", color = Ink, fontSize = 13.sp)
+                if (!remindersEnabled) Text("Enable reminders in Settings first.", color = Muted, fontSize = 12.sp)
+            }
+        }
+        Text("You’ll review and send it yourself in WhatsApp. Opening WhatsApp doesn’t confirm it was sent.", color = Muted, fontSize = 12.sp)
         if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
         PrimaryButton("Continue to WhatsApp", {
             if (text.isBlank()) error = "Write a message first." else try {
@@ -49,7 +59,7 @@ import com.punith.awkwardfree.util.*
                 val number = normalizePhone(d.phone)
                 val url = if (number == null) "https://wa.me/?text=${Uri.encode(shareText)}" else "https://wa.me/$number?text=${Uri.encode(shareText)}"
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                onOpened()
+                onOpened(followUp && remindersEnabled)
             } catch (_: Exception) { error = "Couldn't open WhatsApp. Check that WhatsApp or a browser is installed." }
         })
     }
