@@ -4,6 +4,10 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>
     <application android:allowBackup="false" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:label="Awkward-Free" android:theme="@style/Theme.AwkwardFree" android:supportsRtl="true">
+        <receiver android:name=".widget.BalanceWidget" android:exported="true" android:label="Awkward-Free balance">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/balance_widget_info" />
+        </receiver>
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop">
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
             <intent-filter>
