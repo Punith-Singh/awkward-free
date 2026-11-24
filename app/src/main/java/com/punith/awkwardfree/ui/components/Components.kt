@@ -30,9 +30,9 @@ import java.time.LocalDate
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) { Text(eyebrow.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Violet, letterSpacing = .6.sp); Text(title, fontSize = 27.sp, lineHeight = 32.sp, fontWeight = FontWeight.ExtraBold, color = Ink); Text(subtitle, fontSize = 13.sp, color = Muted) }
 }
 @Composable internal fun BackHeader(label: String, back: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        IconButton(onClick = back, modifier = Modifier.background(Color.White, CircleShape).size(36.dp)) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Go back", tint = Ink, modifier = Modifier.size(19.dp)) }
-        Pill(label.uppercase(), Lavender, Violet)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        IconButton(onClick = back, modifier = Modifier.size(48.dp)) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Go back", tint = Ink, modifier = Modifier.size(22.dp)) }
+        Text(label, color = Ink, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
     }
 }
 @Composable internal fun Pill(text: String, bg: Color, fg: Color, onClick: (() -> Unit)? = null) {
@@ -40,21 +40,36 @@ import java.time.LocalDate
     Text(text, modifier, color = fg, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
 }
 @Composable internal fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Button(onClick = onClick, modifier = modifier.fillMaxWidth().height(52.dp), colors = ButtonDefaults.buttonColors(containerColor = Violet), shape = RoundedCornerShape(17.dp)) { Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+    Button(onClick = onClick, modifier = modifier.fillMaxWidth().heightIn(min = 54.dp), colors = ButtonDefaults.buttonColors(containerColor = Violet), shape = RoundedCornerShape(17.dp)) { Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
 }
 @Composable internal fun Avatar(name: String) {
-    Box(Modifier.size(45.dp).background(Peach, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) { Text(name.trim().take(1).uppercase(), color = Color(0xFFCC6F50), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp) }
+    Box(Modifier.size(45.dp).background(Peach, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) { Text(name.trim().take(1).uppercase(), color = Color(0xFFB45B3D), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp) }
 }
 @Composable internal fun DueCard(d: Due, onClick: () -> Unit, onNudge: () -> Unit) {
     val isOverdue = !d.settled && runCatching { LocalDate.parse(d.date).isBefore(LocalDate.now()) }.getOrDefault(false)
-    Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).clickable(onClick = onClick).padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Avatar(d.name); Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) { Text(d.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis); Text((if (d.owedByMe) "I owe · " else "") + d.reason, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            Column(horizontalAlignment = Alignment.End) { Text(money(if (d.settled) d.amount else d.remaining().toPlainString()), color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp); Text(if (d.settled) "Settled" else if (isOverdue) "Overdue · ${dateLabel(d.date)}" else "Due ${dateLabel(d.date)}", color = if (isOverdue) Color(0xFFB43E43) else Muted, fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Normal, fontSize = 11.sp) }
+    Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(22.dp)).clickable(onClick = onClick).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Avatar(d.name)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(d.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(d.reason, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.width(8.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(money(if (d.settled) d.amount else d.remaining().toPlainString()), color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, maxLines = 1)
+                Text(if (d.settled) "Settled" else if (d.owedByMe) "You owe" else "Owed to you", color = Muted, fontSize = 11.sp)
+            }
         }
         HorizontalDivider(color = Line)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(if (d.settled) "Marked settled" else if (d.owedByMe) "Money you owe" else nudgeLabel(d.lastNudged), color = Muted, fontSize = 11.sp, modifier = Modifier.weight(1f)); Pill(if (d.settled || d.owedByMe) "View details" else "Nudge ↗", Lavender, Violet, if (d.settled || d.owedByMe) onClick else onNudge) }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(if (d.settled) "All settled" else if (isOverdue) "Overdue · ${dateLabel(d.date)}" else "Due ${dateLabel(d.date)}",
+                color = if (isOverdue) Color(0xFFB43E43) else Muted, fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Normal,
+                fontSize = 12.sp, modifier = Modifier.weight(1f))
+            if (!d.settled && !d.owedByMe) TextButton(onClick = onNudge) { Text("Remind") }
+            else TextButton(onClick = onClick) { Text("Details") }
+        }
     }
 }
 @Composable internal fun EmptyCard(title: String, subtitle: String) { Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(title, fontWeight = FontWeight.Bold, color = Ink); Text(subtitle, fontSize = 13.sp, color = Muted) } }
