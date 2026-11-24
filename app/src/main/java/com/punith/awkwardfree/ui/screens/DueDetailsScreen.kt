@@ -34,7 +34,7 @@ import com.punith.awkwardfree.util.*
         BackHeader(if (d.settled) "Settled" else "Open tab", back)
         Heading("The little details", "${d.name}’s tab.", d.reason)
         Column(Modifier.fillMaxWidth().background(Deep, RoundedCornerShape(24.dp)).padding(22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Pill(if (d.settled) "SETTLED" else "OPEN TAB", Color(0xFF4D427C), Color(0xFFDCD5FF)); Text("✦", color = Lime, fontSize = 21.sp) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Pill(if (d.settled) "SETTLED" else "OPEN TAB", Color(0xFF4D427C), Color(0xFFE4DFFF)); Text("✦", color = Lime, fontSize = 21.sp) }
             Text(if (d.settled) "TOTAL TAB" else "REMAINING", color = Color(0xFFD2C9FF), fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Text(money(if (d.settled) d.amount else d.remaining().toPlainString()), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 38.sp)
             if (d.paidAmount.toBigDecimalOrNull() != null && d.paidAmount.toBigDecimal() > BigDecimal.ZERO) Text("Paid ${money(d.paidAmount)} of ${money(d.amount)}", color = Color(0xFFDCD5FF), fontSize = 13.sp)
