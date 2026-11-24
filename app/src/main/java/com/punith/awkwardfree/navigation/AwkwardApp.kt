@@ -67,6 +67,7 @@ import com.punith.awkwardfree.ui.theme.*
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(store) { if (store.remindersEnabled) scheduleReminders(context, true) }
     DisposableEffect(lifecycleOwner, store) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
