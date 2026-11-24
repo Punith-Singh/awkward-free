@@ -42,7 +42,7 @@ import com.punith.awkwardfree.reminders.suggestedFollowUpTone
             Text("MESSAGE PREVIEW  ·  TAP TO EDIT", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             HorizontalDivider(color = Line)
             BasicTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp), textStyle = TextStyle(fontFamily = Jakarta, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, color = Ink))
-            if (upi.isNotBlank()) Column(Modifier.fillMaxWidth().background(Color(0xFFF0F7F0), RoundedCornerShape(14.dp)).padding(12.dp)) { Text("PAYMENT LINK INCLUDED", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text(upi, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold) } else TextButton(onClick = settings) { Text("Add UPI ID for a payment link") }
+            if (upi.isNotBlank()) Column(Modifier.fillMaxWidth().background(Color(0xFFF4F0FF), RoundedCornerShape(14.dp)).padding(12.dp)) { Text("PAYMENT LINK INCLUDED", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text(upi, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold) } else TextButton(onClick = settings) { Text("Add UPI ID for a payment link") }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = followUp, onCheckedChange = { followUp = it }, enabled = remindersEnabled)

@@ -27,7 +27,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.theme.*
 
 private val UpiPattern = Regex("[A-Za-z0-9._-]+@[A-Za-z0-9._-]+")
-private val SoftLavender = Color(0xFFCDE3D5)
+private val SoftLavender = Color(0xFFD2C9FF)
 
 @Composable
 internal fun SettingsScreen(

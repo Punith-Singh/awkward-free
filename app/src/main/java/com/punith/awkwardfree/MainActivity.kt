@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleShortcut(intent)
-        window.statusBarColor = android.graphics.Color.rgb(246, 248, 244)
+        window.statusBarColor = android.graphics.Color.rgb(245, 244, 251)
         window.navigationBarColor = android.graphics.Color.WHITE
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR

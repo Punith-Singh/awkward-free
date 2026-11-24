@@ -109,12 +109,12 @@ import java.time.LocalDate
             if (voiceMessage.isNotBlank()) Text(voiceMessage, color = Ink, fontSize = 13.sp)
         }
         Column(Modifier.fillMaxWidth().background(Deep, RoundedCornerShape(22.dp)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("HOW MUCH?", color = Color(0xFFCDE3D5), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            Text("HOW MUCH?", color = Color(0xFFD2C9FF), fontWeight = FontWeight.Bold, fontSize = 11.sp)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("₹ ", color = Color(0xFFB3D4BF), fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("₹ ", color = Color(0xFFB8A9FF), fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 BasicTextField(value = amount, onValueChange = { amount = it }, singleLine = true, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), textStyle = TextStyle(fontFamily = Jakarta, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = Color.White), decorationBox = { inner -> Box { if (amount.isEmpty()) Text("0", color = Color(0xFFB8A9FF), fontSize = 36.sp, fontWeight = FontWeight.ExtraBold); inner() } })
             }
-            Text("Every rupee deserves its way home.", color = Color(0xFFDCEDE1), fontSize = 12.sp)
+            Text("Every rupee deserves its way home.", color = Color(0xFFDCD5FF), fontSize = 12.sp)
         }
         Text("DIRECTION", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
