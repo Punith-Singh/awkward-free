@@ -5,7 +5,7 @@ bash ./gradlew :app:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell pm clear "$package_name" >/dev/null
 adb shell run-as "$package_name" mkdir -p shared_prefs
-printf '%s' '<?xml version="1.0" encoding="utf-8" standalone="yes" ?><map><boolean name="complete" value="true" /></map>' | adb shell run-as "$package_name" sh -c 'cat > shared_prefs/awkward_free_onboarding.xml'
+printf '%s' '<?xml version="1.0" encoding="utf-8" standalone="yes" ?><map><boolean name="complete" value="true" /></map>' | adb shell run-as "$package_name" tee shared_prefs/awkward_free_onboarding.xml >/dev/null
 adb shell am force-stop "$package_name"
 adb shell am start -n "$package_name/.MainActivity" >/dev/null
 sleep 6
