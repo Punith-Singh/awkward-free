@@ -36,7 +36,7 @@ internal class AutoBackupMirror(private val context: Context) {
         }
     }
 
-    fun snapshot(name: String, prefs: SharedPreferences, validate: (String) -> Backup) {
+    fun snapshot(name: String, prefs: SharedPreferences, validate: (String) -> Backup): Boolean =
         runCatching {
             val json = JSONObject().put("version", 5)
                 .put("dues", JSONArray(prefs.getString("dues", "[]")))
@@ -57,16 +57,11 @@ internal class AutoBackupMirror(private val context: Context) {
                 throw error
             }
             BackupManager(context).dataChanged()
-        }
-    }
+        }.isSuccess
 
-    fun snapshotExistingAccounts(validate: (String) -> Backup) {
+    fun snapshotExistingAccounts(validate: (String) -> Backup): Boolean {
         val prefsDir = File(context.applicationInfo.dataDir, "shared_prefs")
-        prefsDir.listFiles()?.filter { it.isFile && it.name.endsWith(".xml") }?.forEach { file ->
-            val name = file.name.removeSuffix(".xml")
-            if (name == "awkward_free" || name.startsWith("awkward_free_user_")) {
-                snapshot(name, context.getSharedPreferences(name, Context.MODE_PRIVATE), validate)
-            }
-        }
+        val accounts = prefsDir.listFiles()?.filter { it.isFile && it.name.endsWith(".xml") }?.map { it.name.removeSuffix(".xml") }?.filter { it == "awkward_free" || it.startsWith("awkward_free_user_") } ?: emptyList()
+        return accounts.all { snapshot(it, context.getSharedPreferences(it, Context.MODE_PRIVATE), validate) }
     }
 }
