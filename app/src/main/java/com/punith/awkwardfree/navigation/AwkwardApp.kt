@@ -67,6 +67,7 @@ import com.punith.awkwardfree.ui.theme.*
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(store) { if (store.remindersEnabled) scheduleReminders(context, true) }
     DisposableEffect(lifecycleOwner, store) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -161,7 +162,7 @@ import com.punith.awkwardfree.ui.theme.*
                 "settings" -> SettingsScreen(upi, name, reminderEnabled, backupStatus, accountEmail, { screen = "account" }, { back() }, { enabled ->
                     if (enabled && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     else { reminderEnabled = enabled; store.remindersEnabled = enabled; scheduleReminders(context, enabled); backupStatus = if (enabled) "Daily reminders enabled." else "Reminders turned off." }
-                }, { exportLauncher.launch("awkward-free-backup.json") }, { importLauncher.launch(arrayOf("application/json", "text/plain")) }, quietHoursEnabled, { enabled -> quietHoursEnabled = enabled; store.quietHoursEnabled = enabled }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
+                }, { exportLauncher.launch("awkward-free-backup.json") }, { importLauncher.launch(arrayOf("application/json", "text/plain")) }, store.automaticSnapshotHealthy, quietHoursEnabled, { enabled -> quietHoursEnabled = enabled; store.quietHoursEnabled = enabled }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
             }
         }
     }

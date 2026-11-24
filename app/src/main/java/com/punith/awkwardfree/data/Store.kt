@@ -12,21 +12,35 @@ internal data class Backup(val dues: List<Due>, val upi: String, val displayName
 
 internal class Store(context: Context, userId: String? = null) {
     private val appContext = context.applicationContext
-    private val prefs = context.getSharedPreferences(if (userId == null) "awkward_free" else "awkward_free_user_$userId", 0)
+    private val prefsName = if (userId == null) "awkward_free" else "awkward_free_user_$userId"
+    private val prefs = context.getSharedPreferences(prefsName, 0)
+    private val mirror = AutoBackupMirror(appContext)
+    var automaticSnapshotHealthy: Boolean = true
+        private set
+
+    init {
+        mirror.restoreIfAbsent(prefsName, prefs, ::parseBackup)
+        if (prefs.all.isNotEmpty()) automaticSnapshotHealthy = mirror.snapshot(prefsName, prefs, ::parseBackup)
+        val migrated = java.io.File(appContext.noBackupFilesDir, "app_backup_migrated")
+        if (!migrated.exists() && mirror.snapshotExistingAccounts(::parseBackup)) {
+            runCatching { migrated.writeText("1") }
+        }
+    }
+    private fun snapshotForBackup() { automaticSnapshotHealthy = mirror.snapshot(prefsName, prefs, ::parseBackup) }
     var upi: String
         get() = prefs.getString("upi", "") ?: ""
-        set(value) { prefs.edit().putString("upi", value).apply() }
+        set(value) { prefs.edit().putString("upi", value).apply(); snapshotForBackup() }
     var displayName: String
         get() = prefs.getString("display_name", "") ?: ""
-        set(value) { prefs.edit().putString("display_name", value).apply() }
+        set(value) { prefs.edit().putString("display_name", value).apply(); snapshotForBackup() }
     var remindersEnabled: Boolean
         get() = prefs.getBoolean("reminders_enabled", false)
-        set(value) { prefs.edit().putBoolean("reminders_enabled", value).apply() }
+        set(value) { prefs.edit().putBoolean("reminders_enabled", value).apply(); snapshotForBackup() }
     var quietHoursEnabled: Boolean
         get() = prefs.getBoolean("quiet_hours", true)
-        set(value) { prefs.edit().putBoolean("quiet_hours", value).apply() }
+        set(value) { prefs.edit().putBoolean("quiet_hours", value).apply(); snapshotForBackup() }
     fun read(): List<Due> = try { parseDues(JSONArray(prefs.getString("dues", "[]"))) } catch (_: Exception) { emptyList() }
-    fun write(dues: List<Due>) { prefs.edit().putString("dues", encodeDues(dues).toString()).apply(); updateBalanceWidgets(appContext) }
+    fun write(dues: List<Due>) { prefs.edit().putString("dues", encodeDues(dues).toString()).apply(); snapshotForBackup(); updateBalanceWidgets(appContext) }
     fun exportBackup(): String = JSONObject().put("version", 5).put("dues", encodeDues(read()))
         .put("upi", upi).put("displayName", displayName).toString(2)
     fun parseBackup(text: String): Backup {
@@ -45,7 +59,7 @@ internal class Store(context: Context, userId: String? = null) {
     fun restore(backup: Backup): Boolean {
         val saved = prefs.edit().putString("dues", encodeDues(backup.dues).toString())
             .putString("upi", backup.upi).putString("display_name", backup.displayName).commit()
-        if (saved) updateBalanceWidgets(appContext)
+        if (saved) { snapshotForBackup(); updateBalanceWidgets(appContext) }
         return saved
     }
     private fun encodeDues(dues: List<Due>): JSONArray = JSONArray().also { array -> dues.forEach { d ->
