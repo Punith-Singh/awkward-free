@@ -2,6 +2,11 @@ package com.punith.awkwardfree.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.punith.awkwardfree.util.createFriendStatement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,6 +34,7 @@ import java.util.Locale
     openSplit: (String) -> Unit, onOffset: (Due) -> Unit, onGroupOpened: (Set<String>) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var pendingReminder by remember { mutableStateOf<List<Due>?>(null) }
     var message by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
@@ -80,6 +86,20 @@ import java.util.Locale
                     }
                     TextButton(onClick = { details(first) }) { Text("Details") }
                 }
+                TextButton(onClick = {
+                    val snapshot = group.toList()
+                    scope.launch {
+                        try {
+                            val uri = withContext(Dispatchers.IO) { createFriendStatement(context, snapshot) }
+                            val send = Intent(Intent.ACTION_SEND).setType("application/pdf")
+                                .putExtra(Intent.EXTRA_STREAM, uri)
+                                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            context.startActivity(Intent.createChooser(send, "Share statement"))
+                        } catch (_: Exception) {
+                            Toast.makeText(context, "Couldn’t create or share the statement.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Share PDF statement") }
             }
         }
         if (splits.isNotEmpty()) item { Text("Split expenses", color = Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp) }
