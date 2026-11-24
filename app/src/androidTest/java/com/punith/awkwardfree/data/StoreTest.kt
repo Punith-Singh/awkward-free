@@ -109,7 +109,7 @@ class StoreTest {
         val due = Due(name = "Ananya", amount = "50.00", reason = "Lunch", date = "2026-11-24")
         store.write(listOf(due))
         context.getSharedPreferences("awkward_free", 0).edit().putString("dues", "broken").commit()
-        Store(context)
+        assertFalse(Store(context).automaticSnapshotHealthy)
         context.getSharedPreferences("awkward_free", 0).edit().clear().commit()
         assertEquals(due.id, Store(context).read().single().id)
     }
