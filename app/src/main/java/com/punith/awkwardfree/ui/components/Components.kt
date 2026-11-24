@@ -43,7 +43,7 @@ import java.time.LocalDate
     Button(onClick = onClick, modifier = modifier.fillMaxWidth().heightIn(min = 54.dp), colors = ButtonDefaults.buttonColors(containerColor = Violet), shape = RoundedCornerShape(17.dp)) { Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
 }
 @Composable internal fun Avatar(name: String) {
-    Box(Modifier.size(45.dp).background(Peach, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) { Text(name.trim().take(1).uppercase(), color = Color(0xFFB45B3D), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp) }
+    Box(Modifier.size(45.dp).background(Peach, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) { Text(name.trim().take(1).uppercase(), color = Color(0xFFCC6F50), fontWeight = FontWeight.ExtraBold, fontSize = 17.sp) }
 }
 @Composable internal fun DueCard(d: Due, onClick: () -> Unit, onNudge: () -> Unit) {
     val isOverdue = !d.settled && runCatching { LocalDate.parse(d.date).isBefore(LocalDate.now()) }.getOrDefault(false)
