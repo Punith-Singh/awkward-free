@@ -145,7 +145,7 @@ import com.punith.awkwardfree.ui.theme.*
     }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (if (screen == "details" || screen == "nudge") detailOrigin else screen) {
-                "home" -> DuesDashboard(dues, { navigate("friends") }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "nudge" })
+                "home" -> DuesDashboard(dues, { navigate("friends") }, { addOrigin = "home"; navigate("add") }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "nudge" })
                 "friends" -> FriendsScreen(dues, upi, { d -> friendReferenceId = d.id; screen = "friendDetails" }, { d -> detailOrigin = "friends"; selectedId = d.id; screen = "nudge" }, { id -> splitGroupId = id; screen = "splitGroup" }, { reference -> updateWithUndo(offsetFriendTabs(reference, dues), "Tabs offset") }, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) })
                 "friendDetails" -> {
                     val reference = dues.firstOrNull { it.id == friendReferenceId }
