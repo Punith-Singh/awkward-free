@@ -6,6 +6,8 @@ on:
       - '.github/workflows/android-visual-preview.yml'
       - 'scripts/capture-visual-preview.sh'
       - 'app/src/main/java/com/punith/awkwardfree/navigation/AwkwardApp.kt'
+      - 'app/src/main/java/com/punith/awkwardfree/ui/**'
+      - 'app/src/main/java/com/punith/awkwardfree/MainActivity.kt'
 permissions:
   contents: read
 jobs:
