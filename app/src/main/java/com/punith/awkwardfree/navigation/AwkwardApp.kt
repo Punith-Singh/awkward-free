@@ -197,9 +197,25 @@ import com.punith.awkwardfree.ui.theme.*
         selectedIconColor = Violet, unselectedIconColor = Muted,
         indicatorColor = Lavender
     )
-    Column(Modifier.fillMaxWidth().background(Color.White)) {
-        HorizontalDivider(color = Line)
-        NavigationBar(containerColor = Color.White, contentColor = Ink, tonalElevation = 0.dp) {
+    val glassShape = RoundedCornerShape(28.dp)
+    Box(
+        modifier = Modifier.fillMaxWidth().navigationBarsPadding()
+            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp, top = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        NavigationBar(
+            modifier = Modifier.fillMaxWidth().height(68.dp)
+                .shadow(elevation = 12.dp, shape = glassShape, ambientColor = Deep.copy(alpha = 0.16f), spotColor = Deep.copy(alpha = 0.18f))
+                .background(
+                    brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.94f), Color(0xFFEAF4ED).copy(alpha = 0.90f))),
+                    shape = glassShape
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.85f), glassShape),
+            containerColor = Color.Transparent,
+            contentColor = Ink,
+            tonalElevation = 0.dp,
+            windowInsets = WindowInsets(0, 0, 0, 0)
+        ) {
             NavigationBarItem(selected = active == "home", onClick = { onSelect("home") }, icon = { Icon(Icons.Outlined.Home, contentDescription = "Dues") }, colors = colors)
             NavigationBarItem(selected = active == "friends", onClick = { onSelect("friends") }, icon = { Icon(Icons.Outlined.People, contentDescription = "Friends") }, colors = colors)
             NavigationBarItem(selected = active == "add", onClick = onAdd, icon = { Icon(Icons.Outlined.AddBox, contentDescription = "Add a due") }, colors = colors)
