@@ -1,6 +1,8 @@
 package com.punith.awkwardfree.ui.theme
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,6 +31,8 @@ internal fun appTypography(): Typography {
         labelLarge = t.labelLarge.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), labelMedium = t.labelMedium.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified), labelSmall = t.labelSmall.copy(fontFamily = Jakarta, letterSpacing = 0.sp, lineHeight = TextUnit.Unspecified)
     )
 }
+internal fun appShapes() = Shapes(extraSmall = RoundedCornerShape(14.dp), small = RoundedCornerShape(16.dp), medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(24.dp), extraLarge = RoundedCornerShape(28.dp))
+
 internal val Background = Color(0xFFF6F8F4)
 internal val Ink = Color(0xFF172A23)
 internal val Muted = Color(0xFF65756D)
