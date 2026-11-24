@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/android-visual-preview.yml'
       - 'scripts/capture-visual-preview.sh'
+      - 'app/src/main/java/com/punith/awkwardfree/navigation/AwkwardApp.kt'
 permissions:
   contents: read
 jobs:
