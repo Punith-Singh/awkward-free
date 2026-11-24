@@ -42,6 +42,7 @@ import com.punith.awkwardfree.ui.components.*
 import com.punith.awkwardfree.ui.screens.*
 import com.punith.awkwardfree.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable internal fun AwkwardApp(store: Store, auth: FirebaseAuth?, accountEmail: String?, quickAddPending: Boolean = false, onQuickAddHandled: () -> Unit = {}, notificationTarget: NotificationTarget? = null, onNotificationHandled: () -> Unit = {}) {
     var dues by remember(store) {
         val saved = store.read()
@@ -113,11 +114,11 @@ import com.punith.awkwardfree.ui.theme.*
         }
     }
     BackHandler(enabled = screen != "home") { back() }
-    Scaffold(containerColor = Background, bottomBar = { BottomBar(screen) { navigate(it) } }, floatingActionButton = {
+    Scaffold(containerColor = Background, bottomBar = { BottomBar(if (screen == "details" || screen == "nudge") detailOrigin else screen) { navigate(it) } }, floatingActionButton = {
         if (screen == "home" || screen == "friends") FloatingActionButton(onClick = { addOrigin = screen; navigate("add") }, containerColor = Lime, contentColor = Deep) { Icon(Icons.Outlined.Add, contentDescription = "Add a due") }
     }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            when (screen) {
+            when (if (screen == "details" || screen == "nudge") detailOrigin else screen) {
                 "home" -> DuesDashboard(dues, { navigate("friends") }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "nudge" })
                 "friends" -> FriendsScreen(dues, upi, { d -> friendReferenceId = d.id; screen = "friendDetails" }, { d -> detailOrigin = "friends"; selectedId = d.id; screen = "nudge" }, { id -> splitGroupId = id; screen = "splitGroup" }, { reference -> update(offsetFriendTabs(reference, dues)) }, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) })
                 "friendDetails" -> {
@@ -133,14 +134,22 @@ import com.punith.awkwardfree.ui.theme.*
                 "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) }, { reference -> update(offsetFriendTabs(reference, dues)) })
                 "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
                 "add" -> AddScreen(if (editing) selected else duplicateOf, { back() }, duplicateOf != null, { screen = "split" }) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; if (!editing) detailOrigin = addOrigin; editing = false; duplicateOf = null; screen = "details" }
-                "details" -> if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00", repeatMonthly = false, recurrenceThrough = "", splitGroupId = ""); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
-                "nudge" -> if (selected != null && !selected.owedByMe) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.recordNudgeOpened(System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
                 "account" -> AccountScreen(auth, accountEmail) { screen = "settings" }
                 "settings" -> SettingsScreen(upi, name, reminderEnabled, backupStatus, accountEmail, { screen = "account" }, { back() }, { enabled ->
                     if (enabled && Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     else { reminderEnabled = enabled; store.remindersEnabled = enabled; scheduleReminders(context, enabled); backupStatus = if (enabled) "Daily reminders enabled." else "Reminders turned off." }
                 }, { exportLauncher.launch("awkward-free-backup.json") }, { importLauncher.launch(arrayOf("application/json", "text/plain")) }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
             }
+        }
+    }
+    if (screen == "details") {
+        ModalBottomSheet(onDismissRequest = { back() }) {
+            if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00", repeatMonthly = false, recurrenceThrough = "", splitGroupId = ""); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
+        }
+    }
+    if (screen == "nudge") {
+        ModalBottomSheet(onDismissRequest = { back() }) {
+            if (selected != null && !selected.owedByMe) NudgeScreen(selected, upi, { back() }, { returnToNudge = true; screen = "settings" }) { update(dues.map { if (it.id == selected.id) it.recordNudgeOpened(System.currentTimeMillis()) else it }); screen = "details" } else EmptyFallback { screen = "home" }
         }
     }
     pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = materializeMonthly(backup.dues, java.time.LocalDate.now()); store.write(dues); upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }
