@@ -41,6 +41,7 @@ internal fun SettingsScreen(
     setReminders: (Boolean) -> Unit,
     exportBackup: () -> Unit,
     importBackup: () -> Unit,
+    automaticSnapshotHealthy: Boolean,
     quietHoursEnabled: Boolean,
     setQuietHours: (Boolean) -> Unit,
     save: (String, String) -> Unit
@@ -117,6 +118,7 @@ internal fun SettingsScreen(
             }
         }
         SectionLabel("BACKUP & RESTORE")
+        if (!automaticSnapshotHealthy) Text("Automatic backup snapshot could not be updated. Your last backup may be out of date.", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
         SettingsGroup {
             SettingsRow(
                 icon = Icons.Outlined.FileUpload,
