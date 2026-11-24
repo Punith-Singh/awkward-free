@@ -41,6 +41,8 @@ internal fun SettingsScreen(
     setReminders: (Boolean) -> Unit,
     exportBackup: () -> Unit,
     importBackup: () -> Unit,
+    quietHoursEnabled: Boolean,
+    setQuietHours: (Boolean) -> Unit,
     save: (String, String) -> Unit
 ) {
     val context = LocalContext.current
@@ -108,6 +110,12 @@ internal fun SettingsScreen(
             }
         }
 
+        SettingsGroup {
+            SettingsRow(icon = Icons.Outlined.Bedtime, title = "Quiet hours", subtitle = "Pause reminders from 10 PM to 8 AM, local time.",
+                modifier = Modifier.toggleable(value = quietHoursEnabled, role = Role.Switch, onValueChange = setQuietHours)) {
+                Switch(checked = quietHoursEnabled, onCheckedChange = null)
+            }
+        }
         SectionLabel("BACKUP & RESTORE")
         SettingsGroup {
             SettingsRow(
