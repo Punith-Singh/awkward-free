@@ -37,7 +37,7 @@ import java.util.Locale
     val today = LocalDate.now()
     fun dateOf(due: Due): LocalDate? = runCatching { LocalDate.parse(due.date) }.getOrNull()
     val overdue = open.filter { dateOf(it)?.isBefore(today) == true }
-    val upcoming = open.filter { dateOf(it)?.let { date -> !date.isBefore(today) && !date.isAfter(today.plusDays(7)) } == true }
+    val upcoming = open.filter { dateOf(it)?.let { date -> !date.isBefore(today) && !date.isAfter(today.plusDays(6)) } == true }
     val priority = open.sortedWith(compareBy<Due> { dateOf(it) ?: LocalDate.MAX }.thenBy { it.id })
     val largestGroup = open.filterNot { it.owedByMe }.groupBy {
         normalizePhone(it.phone)?.let { phone -> "${it.name.trim().lowercase(Locale.ROOT)}:$phone" } ?: "entry:${it.id}"
@@ -45,17 +45,7 @@ import java.util.Locale
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 22.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column { Text("GOOD TO SEE YOU", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(5.dp)); Text(if (name.isBlank()) "Hey there ✨" else "Hey, ${name.trim()} ✨", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold) }; Box(Modifier.size(40.dp).background(Violet, RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) { Text(name.trim().take(1).uppercase().ifEmpty { "✦" }, color = Color.White, fontWeight = FontWeight.Bold) } } }
         item { BalanceCard(dues) }
-        if (splitGroups.isNotEmpty()) {
-            item { Text("Split expenses", color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp) }
-            items(splitGroups.take(3), key = { "split:" + it.first().splitGroupId }) { group ->
-                val trackedTotal = group.fold(BigDecimal.ZERO) { sum, due -> sum + (due.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) }
-                Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(group.first().reason, color = Ink, fontWeight = FontWeight.Bold)
-                    Text("${money(trackedTotal.toPlainString())} in tracked shares · ${group.count { it.settled }} of ${group.size} settled", color = Muted)
-                    TextButton(onClick = { openSplit(group.first().splitGroupId) }) { Text("View tabs") }
-                }
-            }
-        }
+        item { PrimaryButton("＋   Add a due", add) }
         if (open.isNotEmpty()) item {
             Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Coming up", color = Ink, fontWeight = FontWeight.Bold)
@@ -72,11 +62,21 @@ import java.util.Locale
         items(priority.take(3), key = { it.id }) { d ->
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (dateOf(d)?.isBefore(today) == true) Text("OVERDUE", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
-                else if (dateOf(d)?.let { !it.isAfter(today.plusDays(7)) } == true) Text("DUE THIS WEEK", color = Violet, style = MaterialTheme.typography.labelSmall)
+                else if (dateOf(d)?.let { !it.isAfter(today.plusDays(6)) } == true) Text("DUE THIS WEEK", color = Violet, style = MaterialTheme.typography.labelSmall)
                 DueCard(d, { details(d) }, { nudge(d) })
             }
         }
-        item { PrimaryButton("＋   Add a due", add) }
+        if (splitGroups.isNotEmpty()) {
+            item { Text("Split expenses", color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp) }
+            items(splitGroups.take(3), key = { "split:" + it.first().splitGroupId }) { group ->
+                val trackedTotal = group.fold(BigDecimal.ZERO) { sum, due -> sum + (due.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) }
+                Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(group.first().reason, color = Ink, fontWeight = FontWeight.Bold)
+                    Text("${money(trackedTotal.toPlainString())} in tracked shares · ${group.count { it.settled }} of ${group.size} settled", color = Muted)
+                    TextButton(onClick = { openSplit(group.first().splitGroupId) }) { Text("View tabs") }
+                }
+            }
+        }
         item { OutlinedButton(onClick = split, modifier = Modifier.fillMaxWidth()) { Text("Split an expense") } }
     }
 }
