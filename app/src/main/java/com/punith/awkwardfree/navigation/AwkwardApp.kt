@@ -18,6 +18,7 @@ import com.punith.awkwardfree.reminders.scheduleReminders
 import com.punith.awkwardfree.reminders.NotificationTarget
 import com.punith.awkwardfree.reminders.resolveNotificationTarget
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -62,6 +63,8 @@ import com.punith.awkwardfree.ui.theme.*
     var duplicateOf by remember { mutableStateOf<Due?>(null) }
     var returnToNudge by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val snackbarHost = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, store) {
         val observer = LifecycleEventObserver { _, event ->
@@ -90,6 +93,24 @@ import com.punith.awkwardfree.ui.theme.*
     }
     val selected = dues.firstOrNull { it.id == selectedId }
     fun update(items: List<Due>) { val current = materializeMonthly(items, java.time.LocalDate.now()); dues = current; store.write(current) }
+    fun updateWithUndo(items: List<Due>, label: String) {
+        val previous = dues
+        val current = materializeMonthly(items, java.time.LocalDate.now())
+        val undo = DueUndo.between(previous, current)
+        dues = current
+        store.write(current)
+        if (undo != null) {
+            snackbarHost.currentSnackbarData?.dismiss()
+            scope.launch {
+                val result = snackbarHost.showSnackbar(label, actionLabel = "Undo", duration = SnackbarDuration.Long)
+                if (result == SnackbarResult.ActionPerformed) {
+                    val restored = undo.restore(dues)
+                    if (restored != null) update(restored)
+                    else snackbarHost.showSnackbar("Couldn’t undo because a tab changed.")
+                }
+            }
+        }
+    }
     fun navigate(target: String) { splitGroupId = null; duplicateOf = null; editing = false; returnToNudge = false; screen = target }
     fun back() { screen = when (screen) { "details" -> detailOrigin; "nudge" -> "details"; "add" -> if (editing && selected != null) "details" else addOrigin; "split" -> "add"; "friendDetails" -> "friends"; "splitGroup" -> "friends"; "settings" -> if (returnToNudge && selected != null) "nudge" else "home"; else -> "home" }; duplicateOf = null; editing = false; returnToNudge = false }
     LaunchedEffect(quickAddPending) {
@@ -114,24 +135,24 @@ import com.punith.awkwardfree.ui.theme.*
         }
     }
     BackHandler(enabled = screen != "home") { back() }
-    Scaffold(containerColor = Background, bottomBar = { BottomBar(if (screen == "details" || screen == "nudge") detailOrigin else screen) { navigate(it) } }, floatingActionButton = {
+    Scaffold(containerColor = Background, snackbarHost = { SnackbarHost(snackbarHost) }, bottomBar = { BottomBar(if (screen == "details" || screen == "nudge") detailOrigin else screen) { navigate(it) } }, floatingActionButton = {
         if (screen == "home" || screen == "friends") FloatingActionButton(onClick = { addOrigin = screen; navigate("add") }, containerColor = Lime, contentColor = Deep) { Icon(Icons.Outlined.Add, contentDescription = "Add a due") }
     }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (if (screen == "details" || screen == "nudge") detailOrigin else screen) {
                 "home" -> DuesDashboard(dues, { navigate("friends") }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "nudge" })
-                "friends" -> FriendsScreen(dues, upi, { d -> friendReferenceId = d.id; screen = "friendDetails" }, { d -> detailOrigin = "friends"; selectedId = d.id; screen = "nudge" }, { id -> splitGroupId = id; screen = "splitGroup" }, { reference -> update(offsetFriendTabs(reference, dues)) }, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) })
+                "friends" -> FriendsScreen(dues, upi, { d -> friendReferenceId = d.id; screen = "friendDetails" }, { d -> detailOrigin = "friends"; selectedId = d.id; screen = "nudge" }, { id -> splitGroupId = id; screen = "splitGroup" }, { reference -> updateWithUndo(offsetFriendTabs(reference, dues), "Tabs offset") }, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) })
                 "friendDetails" -> {
                     val reference = dues.firstOrNull { it.id == friendReferenceId }
                     val number = reference?.let { normalizePhone(it.phone) }
                     val friendDues = if (reference == null) emptyList() else dues.filter { due ->
                         !due.settled && if (number == null) due.id == reference.id else normalizePhone(due.phone) == number && due.name.trim().equals(reference.name.trim(), ignoreCase = true)
                     }
-                    ListScreen("Friend’s tabs", "Open tabs for this friend.", friendDues, false, { screen = "friends" }, { d -> detailOrigin = "friendDetails"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "friendDetails"; selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) }, { d -> update(offsetFriendTabs(d, dues)) })
+                    ListScreen("Friend’s tabs", "Open tabs for this friend.", friendDues, false, { screen = "friends" }, { d -> detailOrigin = "friendDetails"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "friendDetails"; selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) }, { d -> updateWithUndo(offsetFriendTabs(d, dues), "Tabs offset") })
                 }
                 "split" -> SplitDueScreen(dues, { back() }) { entries -> update(entries + dues); navigate("home") }
                 "splitGroup" -> SplitGroupScreen(dues.filter { it.splitGroupId == splitGroupId }, { splitGroupId = null; screen = "friends" }, { d -> detailOrigin = "splitGroup"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "splitGroup"; selectedId = d.id; screen = "nudge" })
-                "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) }, { reference -> update(offsetFriendTabs(reference, dues)) })
+                "dues" -> DuesScreen(dues.filterNot { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" }, { d -> selectedId = d.id; screen = "nudge" }, upi, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) }, { reference -> updateWithUndo(offsetFriendTabs(reference, dues), "Tabs offset") })
                 "settled" -> SettledScreen(dues.filter { it.settled }, { back() }, { d -> selectedId = d.id; screen = "details" })
                 "add" -> AddScreen(if (editing) selected else duplicateOf, { back() }, duplicateOf != null, { screen = "split" }) { due -> update(if (editing) dues.map { if (it.id == due.id) due else it } else listOf(due) + dues); selectedId = due.id; if (!editing) detailOrigin = addOrigin; editing = false; duplicateOf = null; screen = "details" }
                 "account" -> AccountScreen(auth, accountEmail) { screen = "settings" }
@@ -144,7 +165,10 @@ import com.punith.awkwardfree.ui.theme.*
     }
     if (screen == "details") {
         ModalBottomSheet(onDismissRequest = { back() }) {
-            if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { update(dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }) }, { update(dues.filterNot { it.id == selected.id }); selectedId = null; screen = "home" }, { payment -> update(dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00", repeatMonthly = false, recurrenceThrough = "", splitGroupId = ""); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
+            Box(Modifier.fillMaxWidth()) {
+            if (selected != null) DetailScreen(selected, { back() }, { editing = true; screen = "add" }, { selectedId = selected.id; screen = "nudge" }, { val items = dues.map { if (it.id == selected.id) it.copy(settled = !it.settled, paidAmount = if (it.settled && it.remaining().signum() == 0) "0.00" else it.paidAmount) else it }; if (!selected.settled) updateWithUndo(items, "Tab settled") else update(items) }, { updateWithUndo(dues.filterNot { it.id == selected.id }, "Tab deleted"); selectedId = null; screen = "home" }, { payment -> val items = dues.map { if (it.id == selected.id) it.recordPayment(payment) else it }; if (payment.compareTo(selected.remaining()) == 0) updateWithUndo(items, "Tab settled") else update(items) }, { duplicateOf = selected.copy(id = java.util.UUID.randomUUID().toString(), date = java.time.LocalDate.now().toString(), settled = false, lastNudged = 0L, nudgeHistory = emptyList(), paidAmount = "0.00", repeatMonthly = false, recurrenceThrough = "", splitGroupId = ""); editing = false; screen = "add" }) else EmptyFallback { screen = "home" }
+            SnackbarHost(snackbarHost, Modifier.align(Alignment.BottomCenter).padding(12.dp))
+            }
         }
     }
     if (screen == "nudge") {
