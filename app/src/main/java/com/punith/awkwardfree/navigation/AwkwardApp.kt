@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -138,13 +139,14 @@ import com.punith.awkwardfree.ui.theme.*
         }
     }
     BackHandler(enabled = screen != "home") { back() }
-    Scaffold(containerColor = Background, snackbarHost = { SnackbarHost(snackbarHost) }, bottomBar = {
-        BottomBar(if (screen == "details" || screen == "nudge") detailOrigin else screen,
-            onSelect = { navigate(it) },
-            onAdd = { addOrigin = if (screen == "friends" || screen == "friendDetails" || screen == "splitGroup") "friends" else "home"; navigate("add") })
-    }) { padding ->
+    Scaffold(containerColor = Background, snackbarHost = { SnackbarHost(snackbarHost) }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            when (if (screen == "details" || screen == "nudge") detailOrigin else screen) {
+            val visibleScreen = if (screen == "details" || screen == "nudge") detailOrigin else screen
+            Box(Modifier.fillMaxSize().then(
+                if (visibleScreen in listOf("home", "friends", "settings", "add")) Modifier
+                else Modifier.padding(bottom = 84.dp)
+            )) {
+            when (visibleScreen) {
                 "home" -> DuesDashboard(dues, { navigate("friends") }, { addOrigin = "home"; navigate("add") }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "details" }, { d -> detailOrigin = "home"; selectedId = d.id; screen = "nudge" })
                 "friends" -> FriendsScreen(dues, upi, { d -> friendReferenceId = d.id; screen = "friendDetails" }, { d -> detailOrigin = "friends"; selectedId = d.id; screen = "nudge" }, { id -> splitGroupId = id; screen = "splitGroup" }, { reference -> updateWithUndo(offsetFriendTabs(reference, dues), "Tabs offset") }, { ids -> val opened = System.currentTimeMillis(); update(dues.map { if (it.id in ids && !it.settled && !it.owedByMe) it.recordNudgeOpened(opened) else it }) })
                 "friendDetails" -> {
@@ -166,6 +168,11 @@ import com.punith.awkwardfree.ui.theme.*
                     else { reminderEnabled = enabled; store.remindersEnabled = enabled; scheduleReminders(context, enabled); backupStatus = if (enabled) "Daily reminders enabled." else "Reminders turned off." }
                 }, { exportLauncher.launch("awkward-free-backup.json") }, { importLauncher.launch(arrayOf("application/json", "text/plain")) }, store.automaticSnapshotHealthy, quietHoursEnabled, { enabled -> quietHoursEnabled = enabled; store.quietHoursEnabled = enabled }) { newUpi, newName -> upi = newUpi; name = newName; store.upi = newUpi; store.displayName = newName; screen = if (returnToNudge && selected != null) "nudge" else "home"; returnToNudge = false }
             }
+            }
+            BottomBar(visibleScreen,
+                onSelect = { navigate(it) },
+                onAdd = { addOrigin = if (screen == "friends" || screen == "friendDetails" || screen == "splitGroup") "friends" else "home"; navigate("add") },
+                modifier = Modifier.align(Alignment.BottomCenter))
         }
     }
     if (screen == "details") {
@@ -186,7 +193,7 @@ import com.punith.awkwardfree.ui.theme.*
     }
     pendingBackup?.let { backup -> AlertDialog(onDismissRequest = { pendingBackup = null }, title = { Text("Restore backup?") }, text = { Text("This replaces your current dues, name and UPI ID with ${backup.dues.size} records from the backup. This cannot be undone unless you save a backup first.") }, confirmButton = { TextButton(onClick = { if (store.restore(backup)) { dues = materializeMonthly(backup.dues, java.time.LocalDate.now()); store.write(dues); upi = backup.upi; name = backup.displayName; selectedId = null; backupStatus = "Backup restored."; screen = "home" } else backupStatus = "Restore failed. Please try again."; pendingBackup = null }) { Text("Replace and restore") } }, dismissButton = { TextButton(onClick = { pendingBackup = null }) { Text("Cancel") } }) }
 }
-@Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit, onAdd: () -> Unit) {
+@Composable internal fun BottomBar(screen: String, onSelect: (String) -> Unit, onAdd: () -> Unit, modifier: Modifier = Modifier) {
     val active = when (screen) {
         "friends", "friendDetails", "splitGroup" -> "friends"
         "settings", "account" -> "settings"
@@ -194,32 +201,29 @@ import com.punith.awkwardfree.ui.theme.*
         else -> "home"
     }
     val colors = NavigationBarItemDefaults.colors(
-        selectedIconColor = Violet, unselectedIconColor = Muted,
-        indicatorColor = Lavender
+        selectedIconColor = Color(0xFF151918), unselectedIconColor = Color(0xFF151918),
+        indicatorColor = Color(0xFFD5D7D6).copy(alpha = 0.9f)
     )
-    val glassShape = RoundedCornerShape(28.dp)
+    val glassShape = RoundedCornerShape(50)
     Box(
-        modifier = Modifier.fillMaxWidth().navigationBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp, top = 8.dp),
+        modifier = modifier.fillMaxWidth()
+            .padding(start = 14.dp, end = 14.dp, bottom = 12.dp, top = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         NavigationBar(
-            modifier = Modifier.fillMaxWidth().height(68.dp)
-                .shadow(elevation = 12.dp, shape = glassShape, ambientColor = Deep.copy(alpha = 0.16f), spotColor = Deep.copy(alpha = 0.18f))
-                .background(
-                    brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.94f), Color(0xFFEAF4ED).copy(alpha = 0.90f))),
-                    shape = glassShape
-                )
-                .border(1.dp, Color.White.copy(alpha = 0.85f), glassShape),
+            modifier = Modifier.fillMaxWidth().height(60.dp)
+                .shadow(elevation = 6.dp, shape = glassShape, ambientColor = Color.Black.copy(alpha = 0.12f), spotColor = Color.Black.copy(alpha = 0.12f))
+                .background(Color.White.copy(alpha = 0.84f), glassShape)
+                .border(1.dp, Color.White.copy(alpha = 0.72f), glassShape),
             containerColor = Color.Transparent,
             contentColor = Ink,
             tonalElevation = 0.dp,
             windowInsets = WindowInsets(0, 0, 0, 0)
         ) {
-            NavigationBarItem(selected = active == "home", onClick = { onSelect("home") }, icon = { Icon(Icons.Outlined.Home, contentDescription = "Dues") }, colors = colors)
-            NavigationBarItem(selected = active == "friends", onClick = { onSelect("friends") }, icon = { Icon(Icons.Outlined.People, contentDescription = "Friends") }, colors = colors)
-            NavigationBarItem(selected = active == "add", onClick = onAdd, icon = { Icon(Icons.Outlined.AddBox, contentDescription = "Add a due") }, colors = colors)
-            NavigationBarItem(selected = active == "settings", onClick = { onSelect("settings") }, icon = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") }, colors = colors)
+            NavigationBarItem(selected = active == "home", onClick = { onSelect("home") }, icon = { Icon(if (active == "home") Icons.Filled.Home else Icons.Outlined.Home, contentDescription = "Dues") }, colors = colors)
+            NavigationBarItem(selected = active == "friends", onClick = { onSelect("friends") }, icon = { Icon(if (active == "friends") Icons.Filled.People else Icons.Outlined.People, contentDescription = "Friends") }, colors = colors)
+            NavigationBarItem(selected = active == "add", onClick = onAdd, icon = { Icon(if (active == "add") Icons.Filled.AddBox else Icons.Outlined.AddBox, contentDescription = "Add a due") }, colors = colors)
+            NavigationBarItem(selected = active == "settings", onClick = { onSelect("settings") }, icon = { Icon(if (active == "settings") Icons.Filled.Settings else Icons.Outlined.Settings, contentDescription = "Settings") }, colors = colors)
         }
     }
 }

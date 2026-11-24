@@ -90,7 +90,7 @@ import java.time.LocalDate
             voiceMessage = "Voice entry cancelled. You can still enter the details below."
         }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(PaddingValues(start = 22.dp, top = 22.dp, end = 22.dp, bottom = 112.dp)), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         BackHeader(if (duplicating) "Duplicate tab" else if (existing == null) "New tab" else "Edit tab", back)
         Heading("KEEP IT SIMPLE", if (duplicating) "Make another tab." else if (existing == null) "Add a tab." else "Edit your tab.", "Just the details you need to remember.")
         if (existing == null && !duplicating) OutlinedButton(onClick = split, modifier = Modifier.fillMaxWidth()) { Text("Split with friends") }

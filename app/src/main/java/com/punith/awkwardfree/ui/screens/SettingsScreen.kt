@@ -60,7 +60,7 @@ internal fun SettingsScreen(
     }
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(PaddingValues(start = 22.dp, top = 22.dp, end = 22.dp, bottom = 112.dp)),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         BackHeader("Settings", back)

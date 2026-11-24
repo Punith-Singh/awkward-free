@@ -44,7 +44,7 @@ import java.util.Locale
     }.values.sortedBy { it.first().name.lowercase(Locale.ROOT) }
     val splits = dues.filter { it.splitGroupId.isNotBlank() }.groupBy { it.splitGroupId }.values.filter { group -> group.any { !it.settled } }
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 112.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("YOUR PEOPLE", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
