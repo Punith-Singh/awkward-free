@@ -35,7 +35,7 @@ import com.punith.awkwardfree.util.*
 import java.math.BigDecimal
 import java.time.LocalDate
 
-@Composable internal fun AddScreen(existing: Due?, back: () -> Unit, duplicating: Boolean = false, save: (Due) -> Unit) {
+@Composable internal fun AddScreen(existing: Due?, back: () -> Unit, duplicating: Boolean = false, split: () -> Unit = {}, save: (Due) -> Unit) {
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }; var amount by remember(existing?.id) { mutableStateOf(existing?.amount ?: "") }; var reason by remember(existing?.id) { mutableStateOf(existing?.reason ?: "") }; var date by remember(existing?.id) { mutableStateOf(existing?.date ?: LocalDate.now().toString()) }; var phone by remember(existing?.id) { mutableStateOf(existing?.phone ?: "") }; var error by remember { mutableStateOf("") }
     var owedByMe by remember(existing?.id) { mutableStateOf(existing?.owedByMe ?: false) }
     var repeatMonthly by remember(existing?.id) { mutableStateOf(existing?.repeatMonthly ?: false) }
@@ -93,6 +93,7 @@ import java.time.LocalDate
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         BackHeader(if (duplicating) "Duplicate tab" else if (existing == null) "New tab" else "Edit tab", back)
         Heading("Keep it simple", if (duplicating) "Duplicate your tab." else if (existing == null) "Add a little tab." else "Edit your tab.", "Just the details you need to remember.")
+        if (existing == null && !duplicating) OutlinedButton(onClick = split, modifier = Modifier.fillMaxWidth()) { Text("Split with friends") }
         if (existing == null) {
             VoiceCaptureButton(onText = ::fillFromSpeech, fallback = {
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
