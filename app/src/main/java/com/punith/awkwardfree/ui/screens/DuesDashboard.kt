@@ -59,11 +59,11 @@ import java.time.LocalDate
         }
         item {
             Column(
-                Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Deep, Color(0xFF28604B))), RoundedCornerShape(26.dp)).padding(22.dp),
+                Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Deep, Color(0xFF5140B5))), RoundedCornerShape(26.dp)).padding(22.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("TOTAL OWED TO YOU", color = Color(0xFFCEE5D7), style = MaterialTheme.typography.labelMedium)
+                    Text("TOTAL OWED TO YOU", color = Color(0xFFC8C2E0), style = MaterialTheme.typography.labelMedium)
                     if (overdue > 0) Text("$overdue overdue", color = Deep, fontWeight = FontWeight.Bold, fontSize = 11.sp,
                         modifier = Modifier.background(Lime, CircleShape).padding(horizontal = 10.dp, vertical = 6.dp))
                 }
@@ -71,15 +71,15 @@ import java.time.LocalDate
                 HorizontalDivider(color = Color.White.copy(alpha = .16f))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Column(Modifier.weight(1f)) {
-                        Text("YOU OWE", color = Color(0xFFCEE5D7), style = MaterialTheme.typography.labelSmall)
+                        Text("YOU OWE", color = Color(0xFFC8C2E0), style = MaterialTheme.typography.labelSmall)
                         Text(money(payable.toPlainString()), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                     Column(Modifier.weight(1f)) {
-                        Text("NET BALANCE", color = Color(0xFFCEE5D7), style = MaterialTheme.typography.labelSmall)
+                        Text("NET BALANCE", color = Color(0xFFC8C2E0), style = MaterialTheme.typography.labelSmall)
                         Text(money((receivable - payable).toPlainString()), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                     Column {
-                        Text("OPEN", color = Color(0xFFCEE5D7), style = MaterialTheme.typography.labelSmall)
+                        Text("OPEN", color = Color(0xFFC8C2E0), style = MaterialTheme.typography.labelSmall)
                         Text(open.size.toString(), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
