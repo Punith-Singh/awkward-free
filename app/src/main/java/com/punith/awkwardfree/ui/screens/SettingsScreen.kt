@@ -46,6 +46,7 @@ internal fun SettingsScreen(
     val context = LocalContext.current
     var upi by remember { mutableStateOf(currentUpi) }
     var name by remember { mutableStateOf(currentName) }
+    var showQr by remember { mutableStateOf(false) }
     val trimmedUpi = upi.trim()
     val trimmedName = name.trim()
     val upiInvalid = trimmedUpi.isNotEmpty() && !trimmedUpi.matches(UpiPattern)
@@ -82,6 +83,14 @@ internal fun SettingsScreen(
             shape = RoundedCornerShape(17.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Violet, disabledContainerColor = Line, disabledContentColor = Muted)
         ) { Text("Save changes", fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+
+        OutlinedButton(
+            onClick = { showQr = true },
+            enabled = currentName.trim().isNotEmpty() && currentName.trim().length <= 200 &&
+                currentUpi.trim().length <= 200 && currentUpi.trim().matches(UpiPattern),
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Show my UPI QR") }
+        Text("Uses your saved name and UPI ID. Save changes before sharing.", color = Muted, fontSize = 12.sp)
 
         SectionLabel("NOTIFICATIONS")
         SettingsGroup {
@@ -144,6 +153,7 @@ internal fun SettingsScreen(
         }
         Spacer(Modifier.height(8.dp))
     }
+    if (showQr) UpiQrDialog(currentUpi.trim(), currentName.trim()) { showQr = false }
 }
 
 @Composable
