@@ -8,6 +8,10 @@ import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import com.punith.awkwardfree.ui.theme.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -66,7 +70,7 @@ private data class SplitPerson(val name: String = "", val phone: String = "", va
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         BackHeader("Split expense", back)
-        Heading("SPLIT EXPENSE", "Split with friends.", "Choose who paid and how to divide the bill.")
+        Heading("SHARED EXPENSE", "Split it fairly.", "Choose who paid and how you’d like to share the bill.")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = paidByMe, onClick = { paidByMe = true }, label = { Text("I paid") })
             FilterChip(selected = !paidByMe, onClick = { paidByMe = false; includeMe = true }, label = { Text("A friend paid") })
@@ -84,8 +88,8 @@ private data class SplitPerson(val name: String = "", val phone: String = "", va
         }
         if (includeMe && mode != "Equal") OutlinedTextField(value = myShare, onValueChange = { myShare = it; error = "" }, label = { Text(if (mode == "Percent") "My share (%)" else "My share (₹)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true, modifier = Modifier.fillMaxWidth())
         people.forEachIndexed { index, person ->
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Friend ${index + 1}", style = MaterialTheme.typography.titleSmall)
+            Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(22.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("FRIEND ${index + 1}", color = Violet, style = MaterialTheme.typography.labelLarge)
                 OutlinedTextField(value = person.name, onValueChange = { people[index] = person.copy(name = it); error = "" }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = person.phone, onValueChange = { people[index] = person.copy(phone = it); error = "" }, label = { Text("WhatsApp number (optional)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedButton(onClick = {
