@@ -2,6 +2,7 @@ package com.punith.awkwardfree.data
 
 import android.content.Context
 import com.punith.awkwardfree.model.Due
+import com.punith.awkwardfree.widget.updateBalanceWidgets
 import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigDecimal
@@ -10,6 +11,7 @@ import java.time.LocalDate
 internal data class Backup(val dues: List<Due>, val upi: String, val displayName: String)
 
 internal class Store(context: Context, userId: String? = null) {
+    private val appContext = context.applicationContext
     private val prefs = context.getSharedPreferences(if (userId == null) "awkward_free" else "awkward_free_user_$userId", 0)
     var upi: String
         get() = prefs.getString("upi", "") ?: ""
@@ -21,7 +23,7 @@ internal class Store(context: Context, userId: String? = null) {
         get() = prefs.getBoolean("reminders_enabled", false)
         set(value) { prefs.edit().putBoolean("reminders_enabled", value).apply() }
     fun read(): List<Due> = try { parseDues(JSONArray(prefs.getString("dues", "[]"))) } catch (_: Exception) { emptyList() }
-    fun write(dues: List<Due>) { prefs.edit().putString("dues", encodeDues(dues).toString()).apply() }
+    fun write(dues: List<Due>) { prefs.edit().putString("dues", encodeDues(dues).toString()).apply(); updateBalanceWidgets(appContext) }
     fun exportBackup(): String = JSONObject().put("version", 5).put("dues", encodeDues(read()))
         .put("upi", upi).put("displayName", displayName).toString(2)
     fun parseBackup(text: String): Backup {
@@ -37,8 +39,12 @@ internal class Store(context: Context, userId: String? = null) {
         require(restoredUpi.length <= 200 && restoredName.length <= 200) { "Invalid settings." }
         return Backup(items, restoredUpi, restoredName)
     }
-    fun restore(backup: Backup): Boolean = prefs.edit().putString("dues", encodeDues(backup.dues).toString())
-        .putString("upi", backup.upi).putString("display_name", backup.displayName).commit()
+    fun restore(backup: Backup): Boolean {
+        val saved = prefs.edit().putString("dues", encodeDues(backup.dues).toString())
+            .putString("upi", backup.upi).putString("display_name", backup.displayName).commit()
+        if (saved) updateBalanceWidgets(appContext)
+        return saved
+    }
     private fun encodeDues(dues: List<Due>): JSONArray = JSONArray().also { array -> dues.forEach { d ->
         array.put(JSONObject().put("id", d.id).put("name", d.name).put("amount", d.amount).put("reason", d.reason)
             .put("date", d.date).put("phone", d.phone).put("settled", d.settled).put("lastNudged", d.lastNudged).put("paidAmount", d.paidAmount).put("owedByMe", d.owedByMe).put("nudgeHistory", JSONArray(d.nudgeHistory)).put("repeatMonthly", d.repeatMonthly).put("recurrenceThrough", d.recurrenceThrough).put("splitGroupId", d.splitGroupId))

@@ -17,6 +17,7 @@ import com.punith.awkwardfree.navigation.*
 import com.punith.awkwardfree.reminders.*
 import com.punith.awkwardfree.ui.theme.*
 import com.punith.awkwardfree.ui.screens.OnboardingScreen
+import com.punith.awkwardfree.widget.updateBalanceWidgets
 
 class MainActivity : ComponentActivity() {
     private var quickAddPending by mutableStateOf(false)
@@ -52,7 +53,7 @@ class MainActivity : ComponentActivity() {
             val auth = remember { if (FirebaseApp.getApps(this).isEmpty()) null else FirebaseAuth.getInstance() }
             var user by remember { mutableStateOf(auth?.currentUser) }
             DisposableEffect(auth) {
-                val listener = FirebaseAuth.AuthStateListener { user = it.currentUser }
+                val listener = FirebaseAuth.AuthStateListener { user = it.currentUser; updateBalanceWidgets(this@MainActivity) }
                 auth?.addAuthStateListener(listener)
                 onDispose { auth?.removeAuthStateListener(listener) }
             }
