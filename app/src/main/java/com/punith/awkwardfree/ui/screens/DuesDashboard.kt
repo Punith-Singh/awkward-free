@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -59,7 +60,7 @@ import java.time.LocalDate
         }
         item {
             Column(
-                Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Deep, Color(0xFF5140B5))), RoundedCornerShape(26.dp)).padding(22.dp),
+                Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(26.dp), ambientColor = Deep.copy(alpha = .22f), spotColor = Deep.copy(alpha = .28f)).background(Brush.linearGradient(listOf(Deep, HeroEnd)), RoundedCornerShape(26.dp)).padding(22.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -94,7 +95,7 @@ import java.time.LocalDate
         item {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Open", "Overdue", "Settled").forEach { option ->
-                    FilterChip(selected = filter == option, onClick = { filter = option }, label = { Text(option) },
+                    FilterChip(selected = filter == option, onClick = { filter = option }, label = { Text("$option  ${when (option) { "Open" -> open.size; "Overdue" -> overdue; else -> dues.count { it.settled } }}") },
                         shape = RoundedCornerShape(50), border = null,
                         colors = FilterChipDefaults.filterChipColors(containerColor = Color.White, labelColor = Muted,
                             selectedContainerColor = Deep, selectedLabelColor = Color.White))
@@ -110,7 +111,7 @@ import java.time.LocalDate
                     unfocusedBorderColor = Color.Transparent, focusedBorderColor = Violet))
         }
         if (visible.isEmpty()) item {
-            Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(24.dp)).padding(horizontal = 22.dp, vertical = 28.dp),
+            Column(Modifier.fillMaxWidth().softCard(RoundedCornerShape(24.dp), 2.dp).padding(horizontal = 22.dp, vertical = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.size(58.dp).background(Lavender, CircleShape), contentAlignment = Alignment.Center) {
                     Icon(Icons.Outlined.ReceiptLong, contentDescription = null, tint = Violet, modifier = Modifier.size(26.dp))
